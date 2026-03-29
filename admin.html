@@ -2,27 +2,45 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Admin Slim</title>
+    <title>Floorball Admin - Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; padding: 10px; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; width: 100%; max-width: 300px; border: 1px solid #333; }
-        h2 { color: #ff4444; text-align: center; margin-bottom: 15px; font-size: 18px; text-transform: uppercase; }
-        label { color: #888; font-size: 11px; text-transform: uppercase; }
-        input { width: 100%; padding: 10px; margin: 5px 0 15px 0; border-radius: 4px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #ff4444; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 10px; width: 100%; max-width: 350px; border: 1px solid #333; margin-bottom: 20px; }
+        h2 { color: #ff4444; font-size: 18px; text-transform: uppercase; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        label { color: #888; font-size: 11px; text-transform: uppercase; display: block; margin-top: 10px; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 14px; background: #ff4444; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .btn-penalty { background: #555; }
         button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
+
+    <!-- TOR BEREICH -->
     <div class="card">
-        <h2>Floorball Admin</h2>
+        <h2>⚽ Tor eingeben</h2>
         <label>Torschütze</label>
-        <input type="text" id="scorer" placeholder="..." autocomplete="off">
+        <input type="text" id="goalScorer" placeholder="Name..." autocomplete="off">
         <label>Assist</label>
-        <input type="text" id="assist" placeholder="..." autocomplete="off">
+        <input type="text" id="goalAssist" placeholder="Assist..." autocomplete="off">
         <button onclick="sendGoal()">TOR ANZEIGEN</button>
+    </div>
+
+    <!-- STRAFEN BEREICH -->
+    <div class="card">
+        <h2>⚠️ Strafe eingeben</h2>
+        <label>Spieler</label>
+        <input type="text" id="penaltyPlayer" placeholder="Name..." autocomplete="off">
+        <label>Dauer / Art</label>
+        <select id="penaltyDuration">
+            <option value="2'">2 Minuten</option>
+            <option value="2'+2'">2 + 2 Minuten</option>
+            <option value="10'">10 Minuten (Disziplinar)</option>
+            <option value="MS">MS (Matchstrafe)</option>
+        </select>
+        <button class="btn-penalty" onclick="sendPenalty()">STRAFE ANZEIGEN</button>
     </div>
 
     <script>
@@ -35,15 +53,38 @@
             messagingSenderId: "1094353952185",
             appId: "1:1094353952185:web:da70794c9e5104fda22a68"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
         function sendGoal() {
-            const sc = document.getElementById('scorer').value;
-            const as = document.getElementById('assist').value;
-            if (!sc) return;
-            db.ref('lastGoal').set({ scorer: sc, assist: as, timestamp: Date.now() }).then(() => {
-                document.getElementById('scorer').value = '';
-                document.getElementById('assist').value = '';
+            const player = document.getElementById('goalScorer').value;
+            const assist = document.getElementById('goalAssist').value;
+            if (!player) return;
+
+            db.ref('lastEvent').set({
+                type: 'goal',
+                player: player,
+                assist: assist,
+                timestamp: Date.now()
+            }).then(() => {
+                document.getElementById('goalScorer').value = '';
+                document.getElementById('goalAssist').value = '';
+            });
+        }
+
+        function sendPenalty() {
+            const player = document.getElementById('penaltyPlayer').value;
+            const duration = document.getElementById('penaltyDuration').value;
+            if (!player) return;
+
+            db.ref('lastEvent').set({
+                type: 'penalty',
+                player: player,
+                duration: duration,
+                timestamp: Date.now()
+            }).then(() => {
+                document.getElementById('penaltyPlayer').value = '';
             });
         }
     </script>
