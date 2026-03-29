@@ -3,31 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floorball Control Panel - Ultimate Sync</title>
+    <title>Floorball Control Panel</title>
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: #121212; 
+            color: white; 
+            margin: 0; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
         h1 { font-size: 18px; color: #ff4444; margin: 10px 0 20px 0; text-transform: uppercase; letter-spacing: 2px; }
-        .team-select { width: 100%; max-width: 400px; padding: 15px; background: #ff4444; border: none; border-radius: 10px; color: white; font-weight: bold; margin-bottom: 20px; font-size: 16px; cursor: pointer; }
-        .admin-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 400px; margin-bottom: 25px; }
-        .nav-btn { padding: 12px; background: #1e1e1e; border: 1px solid #333; color: #bbb; text-decoration: none; text-align: center; border-radius: 8px; font-size: 11px; font-weight: bold; text-transform: uppercase; transition: 0.3s; cursor: pointer; }
-        .nav-btn:hover { border-color: #ff4444; color: #ff4444; }
-        .nav-btn.active-table { background: #ff4444; color: white; border-color: white; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 360px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+
+        /* Team Auswahl */
+        .team-select { 
+            width: 100%; max-width: 400px; padding: 15px; 
+            background: #ff4444; border: none; border-radius: 10px; 
+            color: white; font-weight: bold; margin-bottom: 20px; 
+            font-size: 16px; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+        }
+
+        /* Navigation Grid */
+        .admin-nav { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            width: 100%; max-width: 400px; 
+            margin-bottom: 25px; 
+        }
+
+        .nav-btn { 
+            padding: 12px; background: #1e1e1e; border: 1px solid #333; 
+            color: #bbb; text-decoration: none; text-align: center; 
+            border-radius: 8px; font-size: 11px; font-weight: bold; 
+            text-transform: uppercase; transition: 0.3s; cursor: pointer;
+        }
+        .nav-btn:hover { border-color: #ff4444; color: #ff4444; background: #1a1a1a; }
+
+        /* Karten Design */
+        .card { 
+            background: #1e1e1e; padding: 20px; border-radius: 12px; 
+            border: 1px solid #333; width: 100%; max-width: 360px; 
+            margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
         h2 { color: #eee; font-size: 13px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; font-size: 14px; outline: none; }
+        label { color: #666; font-size: 9px; text-transform: uppercase; display: block; margin-top: 10px; }
+        
+        input, select { 
+            width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; 
+            border: 1px solid #444; background: #252525; color: white; 
+            box-sizing: border-box; font-size: 14px; outline: none;
+        }
+
         .input-row { display: flex; gap: 10px; }
         .nr-field { width: 70px; }
-        .action-btn { width: 100%; padding: 15px; background: #ff4444; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
-        #sync-status { font-size: 10px; color: #666; margin-top: -10px; margin-bottom: 15px; text-align: center; }
+        
+        .action-btn { 
+            width: 100%; padding: 15px; background: #ff4444; border: none; 
+            border-radius: 8px; color: white; font-weight: bold; cursor: pointer; 
+            margin-top: 10px; font-size: 14px; transition: 0.2s;
+        }
+        .action-btn:active { transform: scale(0.96); }
     </style>
 </head>
 <body>
 
     <h1>Floorball Control</h1>
 
+    <!-- Team Selector -->
     <select id="teamSelector" class="team-select" onchange="updateTeam()">
         <option value="2bundesliga">2. Bundesliga</option>
         <option value="regio">Regio</option>
@@ -38,15 +91,15 @@
         <option value="u9">U9</option>
     </select>
 
+    <!-- Navigation -->
     <div class="admin-nav">
         <a href="management.html" class="nav-btn">👥 Team</a>
         <a href="lineup-admin.html" class="nav-btn">📋 Aufstellung</a>
         <a href="score-admin.html" class="nav-btn">🏆 Score</a>
         <a href="help.html" class="nav-btn">❓ Hilfe</a>
-        <button id="tableToggleBtn" class="nav-btn" style="grid-column: span 2;" onclick="toggleTable()">📊 Tabelle: AUS</button>
     </div>
-    <div id="sync-status">Saisonmanager Sync: Initialisiere...</div>
 
+    <!-- TOR EINGABE -->
     <div class="card">
         <h2>⚽ Tor (Heim +1)</h2>
         <div class="input-row">
@@ -60,6 +113,7 @@
         <button class="action-btn" onclick="send('goal')">Tor & Heim Score +1</button>
     </div>
 
+    <!-- STRAFEN EINGABE -->
     <div class="card">
         <h2>⚠️ Strafe</h2>
         <div class="input-row">
@@ -92,22 +146,19 @@
         let currentT = "2bundesliga";
         let scoreState = { scoreA: 0, scoreB: 0 };
         let activeHotkeys = {};
-        let isTableVisible = false;
 
+        // --- DATEN SYNC ---
         db.ref('scoreboard_active').on('value', s => { scoreState = s.val() || {scoreA:0, scoreB:0}; });
         db.ref('hotkey_config').on('value', s => { activeHotkeys = s.val() || {}; });
-        db.ref('table_control/visible').on('value', s => {
-            isTableVisible = s.val() || false;
-            const btn = document.getElementById('tableToggleBtn');
-            btn.innerText = isTableVisible ? "📊 Tabelle: EIN" : "📊 Tabelle: AUS";
-            btn.className = isTableVisible ? "nav-btn active-table" : "nav-btn";
-        });
 
         function updateTeam() {
             currentT = document.getElementById('teamSelector').value;
             db.ref('teams/' + currentT + '/players').on('value', snap => { players = snap.val() || {}; });
         }
-        function findP(input, target) { document.getElementById(target).value = players[input.value] || ""; }
+
+        function findP(input, target) { 
+            document.getElementById(target).value = players[input.value] || ""; 
+        }
 
         function send(type) {
             let data = { timestamp: Date.now(), type: type };
@@ -115,6 +166,7 @@
                 data.player = document.getElementById('goalName').value;
                 data.assist = document.getElementById('assistName').value;
                 if(!data.player) return;
+                // Auto-Score Heim +1
                 db.ref('scoreboard_active/scoreA').set((scoreState.scoreA || 0) + 1);
             } else {
                 data.player = document.getElementById('penName').value;
@@ -125,66 +177,22 @@
             document.querySelectorAll('.card input').forEach(i => i.value = '');
         }
 
-        function toggleTable() { db.ref('table_control/visible').set(!isTableVisible); }
-
-        // --- NEUER ROBUSTER SYNC ---
-        async function syncTable() {
-            const status = document.getElementById('sync-status');
-            const target = "https://saisonmanager.de/fvd/1892-2-fbl-herren-nordwest/tabelle";
-            
-            // Wir nutzen Codetabs Proxy - oft stabiler als Allorigins
-            const proxy = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(target);
-
-            try {
-                const response = await fetch(proxy);
-                if (!response.ok) throw new Error("Proxy offline");
-                const html = await response.text();
-
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const table = doc.querySelector('table');
-                
-                if (!table) throw new Error("Tabelle fehlt");
-                
-                const rows = table.querySelectorAll('tbody tr');
-                let standings = [];
-
-                rows.forEach(row => {
-                    const cols = row.querySelectorAll('td');
-                    if (cols.length >= 9) {
-                        standings.push({
-                            pos: cols[0].innerText.trim().replace('.', ''),
-                            name: cols[2].innerText.trim(),
-                            games: cols[3].innerText.trim(),
-                            diff: cols[8] ? cols[8].innerText.trim() : '0',
-                            points: cols[9] ? cols[9].innerText.trim() : '0'
-                        });
-                    }
-                });
-
-                if (standings.length > 0) {
-                    db.ref('table_data').set({ lastUpdate: Date.now(), standings: standings });
-                    status.innerText = "Saisonmanager Sync: OK (" + new Date().toLocaleTimeString() + ")";
-                    status.style.color = "#00ff00";
-                }
-            } catch (e) {
-                status.innerText = "Saisonmanager Sync: Fehler! (Proxy blockt)";
-                status.style.color = "#ff4444";
-            }
-        }
-
+        // --- GLOBAL HOTKEY LISTENER ---
         function _getCombo(e) {
+            if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return null;
             let c = [];
             if (e.ctrlKey) c.push('ctrl');
             if (e.shiftKey) c.push('shift');
             if (e.altKey) c.push('alt');
-            if (!['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) c.push(e.key.toLowerCase());
+            c.push(e.key.toLowerCase());
             return c.join('+');
         }
 
         window.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
             const pressed = _getCombo(e);
+            if (!pressed) return;
+
             Object.keys(activeHotkeys).forEach(act => {
                 if (activeHotkeys[act].id === pressed) {
                     e.preventDefault();
@@ -196,8 +204,6 @@
         });
 
         updateTeam();
-        setInterval(syncTable, 300000); // 5 Min
-        syncTable();
     </script>
 </body>
 </html>
