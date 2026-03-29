@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstellungen - Floorball Control</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .back-btn { color: #888; text-decoration: none; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; font-size: 13px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 450px; margin-bottom: 20px; }
+        h1 { color: #ff4444; font-size: 20px; text-transform: uppercase; margin: 0; }
+        h2 { color: #eee; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .hotkey-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; }
+        .key-display { background: #444; color: #00ff00; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 12px; min-width: 50px; text-align: center; }
+        .record-btn { background: #333; color: #aaa; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 10px; }
+        .record-btn.active { background: #ff4444; color: white; border-color: white; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        
+        .info-text { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>⚙️ Setup</h1>
+        <a href="admin.html" class="back-btn">← Zurück</a>
+    </div>
+
+    <div class="card">
+        <h2>Tastenkürzel (Hotkeys)</h2>
+        <div id="hotkey-list">
+            <!-- Items werden per JS geladen -->
+            <div class="hotkey-item"><span>Heim +1</span><div><span class="key-display" id="key-A-plus">...</span><button class="record-btn" onclick="startRecord('A-plus')">Aufnahme</button></div></div>
+            <div class="hotkey-item"><span>Heim -1</span><div><span class="key-display" id="key-A-minus">...</span><button class="record-btn" onclick="startRecord('A-minus')">Aufnahme</button></div></div>
+            <div class="hotkey-item"><span>Gast +1</span><div><span class="key-display" id="key-B-plus">...</span><button class="record-btn" onclick="startRecord('B-plus')">Aufnahme</button></div></div>
+            <div class="hotkey-item"><span>Gast -1</span><div><span class="key-display" id="key-B-minus">...</span><button class="record-btn" onclick="startRecord('B-minus')">Aufnahme</button></div></div>
+        </div>
+        <p class="info-text">Klicke auf "Aufnahme" und drücke die gewünschte Taste oder Kombination (z.B. STRG+Q). Modifikatoren (Strg, Shift, Alt) müssen zusammen mit einer anderen Taste gedrückt werden.</p>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
+            authDomain: "obs-overlay-2950c.firebaseapp.com",
+            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "obs-overlay-2950c",
+            storageBucket: "obs-overlay-2950c.firebasestorage.app",
+            messagingSenderId: "1094353952185",
+            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let activeHotkeys = {};
+        let recordingAction = null;
+
+        // Sync Hotkeys
+        db.ref('hotkey_config').on('value', snap => {
+            activeHotkeys = snap.val() || {};
+            Object.keys(activeHotkeys).forEach(id => {
+                const el = document.getElementById('key-' + id);
+                if(el) el.innerText = activeHotkeys[id].display || "...";
+            });
+        });
+
+        function startRecord(action) {
+            recordingAction = action;
+            document.querySelectorAll('.record-btn').forEach(b => {
+                b.classList.remove('active');
+                b.innerText = "Aufnahme";
+            });
+            event.target.classList.add('active');
+            event.target.innerText = "Tasten drücken...";
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!recordingAction) return;
+
+            // Ignorieren wenn nur Modifikatoren gedrückt werden
+            if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return;
+
+            e.preventDefault();
+            let combo = [];
+            if (e.ctrlKey) combo.push('ctrl');
+            if (e.shiftKey) combo.push('shift');
+            if (e.altKey) combo.push('alt');
+            combo.push(e.key.toLowerCase());
+
+            const saveObj = {
+                id: combo.join('+'),
+                display: combo.join(' + ').toUpperCase()
+            };
+
+            db.ref('hotkey_config/' + recordingAction).set(saveObj).then(() => {
+                recordingAction = null;
+                document.querySelectorAll('.record-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.innerText = "Aufnahme";
+                });
+            });
+        });
+    </script>
+</body>
+</html>
