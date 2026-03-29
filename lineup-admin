@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Lineup Admin</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .nav { margin-bottom: 20px; }
+        .nav a { color: #888; text-decoration: none; margin: 0 10px; font-size: 14px; }
+        .card { background: #1e1e1e; padding: 15px; border-radius: 8px; width: 100%; max-width: 400px; margin-bottom: 15px; }
+        h2 { font-size: 14px; color: #ff4444; text-transform: uppercase; margin-top: 0; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .full { grid-column: span 2; }
+        label { font-size: 10px; color: #666; display: block; margin-top: 5px; }
+        select { width: 100%; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; }
+        .controls { display: flex; gap: 5px; margin-top: 10px; }
+        button { flex: 1; padding: 10px; cursor: pointer; font-weight: bold; border-radius: 4px; border: none; }
+        .btn-show { background: #ff4444; color: white; }
+        .btn-hide { background: #444; color: white; }
+        .btn-save { background: #28a745; color: white; width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <a href="admin.html">← Events</a>
+        <a href="management.html">Team</a>
+    </div>
+
+    <h1>Lineup Management</h1>
+
+    <!-- 3 Reihen Steuerung -->
+    <div id="lines-container"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
+            authDomain: "obs-overlay-2950c.firebaseapp.com",
+            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "obs-overlay-2950c",
+            storageBucket: "obs-overlay-2950c.firebasestorage.app",
+            messagingSenderId: "1094353952185",
+            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let players = {};
+        const positions = ['LW', 'RW', 'C', 'LD', 'RD', 'G'];
+
+        // Spieler laden für die Dropdowns
+        db.ref('players').on('value', (snap) => {
+            players = snap.val() || {};
+            initAdmin();
+        });
+
+        function initAdmin() {
+            const container = document.getElementById('lines-container');
+            container.innerHTML = '';
+
+            [1, 2, 3].forEach(num => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                let html = `<h2>Reihe ${num}</h2><div class="grid">`;
+                
+                positions.forEach(pos => {
+                    html += `<div><label>${pos}</label><select id="l${num}-${pos}"><option value="">- Leer -</option>`;
+                    Object.keys(players).sort((a,b)=>a-b).forEach(nr => {
+                        html += `<option value="${players[nr]}">#${nr} ${players[nr]}</option>`;
+                    });
+                    html += `</select></div>`;
+                });
+
+                html += `</div>
+                    <button class="btn-save" onclick="saveLine(${num})">Speichern</button>
+                    <div class="controls">
+                        <button class="btn-show" onclick="toggleLine(${num}, true)">Einblenden</button>
+                        <button class="btn-hide" onclick="toggleLine(${num}, false)">Ausblenden</button>
+                    </div>`;
+                card.innerHTML = html;
+                container.appendChild(card);
+                loadSavedLine(num);
+            });
+        }
+
+        function saveLine(num) {
+            const data = {};
+            positions.forEach(pos => {
+                data[pos] = document.getElementById(`l${num}-${pos}`).value;
+            });
+            db.ref('lineups/' + num).set(data);
+            alert("Reihe " + num + " gespeichert!");
+        }
+
+        function loadSavedLine(num) {
+            db.ref('lineups/' + num).once('value', (snap) => {
+                const data = snap.val() || {};
+                positions.forEach(pos => {
+                    if(data[pos]) document.getElementById(`l${num}-${pos}`).value = data[pos];
+                });
+            });
+        }
+
+        function toggleLine(num, show) {
+            db.ref('lineup_control').set({ visible: show, activeLine: num });
+        }
+    </script>
+</body>
+</html>
