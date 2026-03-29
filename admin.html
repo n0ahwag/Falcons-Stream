@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Floorball Control Panel - Ultimate</title>
+    <title>Floorball Control Panel - Ultimate Fix</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -45,7 +45,7 @@
             padding: 12px; background: #1e1e1e; border: 1px solid #333; 
             color: #bbb; text-decoration: none; text-align: center; 
             border-radius: 8px; font-size: 11px; font-weight: bold; 
-            text-transform: uppercase; transition: 0.3s; 
+            text-transform: uppercase; transition: 0.3s; cursor: pointer;
         }
         .nav-btn:hover { border-color: #ff4444; color: #ff4444; }
         .nav-btn.active-table { background: #ff4444; color: white; border-color: white; }
@@ -76,7 +76,7 @@
         }
         .action-btn:active { transform: scale(0.96); }
 
-        #sync-status { font-size: 9px; color: #555; margin-top: -10px; margin-bottom: 10px; }
+        #sync-status { font-size: 10px; color: #666; margin-top: -10px; margin-bottom: 15px; transition: 0.5s; }
     </style>
 </head>
 <body>
@@ -101,9 +101,9 @@
         <a href="score-admin.html" class="nav-btn">🏆 Score</a>
         <a href="help.html" class="nav-btn">❓ Hilfe</a>
         <!-- Tabellen Button -->
-        <button id="tableToggleBtn" class="nav-btn" style="grid-column: span 2; cursor: pointer;" onclick="toggleTable()">📊 Tabelle: AUS</button>
+        <button id="tableToggleBtn" class="nav-btn" style="grid-column: span 2;" onclick="toggleTable()">📊 Tabelle: AUS</button>
     </div>
-    <div id="sync-status">Saisonmanager Sync: Warte...</div>
+    <div id="sync-status">Saisonmanager Sync: Verbinde...</div>
 
     <!-- TOR EINGABE -->
     <div class="card">
@@ -136,7 +136,6 @@
     </div>
 
     <script>
-        // FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
             authDomain: "obs-overlay-2950c.firebaseapp.com",
@@ -155,7 +154,6 @@
         let activeHotkeys = {};
         let isTableVisible = false;
 
-        // --- REALTIME SYNC ---
         db.ref('scoreboard_active').on('value', s => { scoreState = s.val() || {scoreA:0, scoreB:0}; });
         db.ref('hotkey_config').on('value', s => { activeHotkeys = s.val() || {}; });
         db.ref('table_control/visible').on('value', s => {
@@ -188,33 +186,41 @@
             document.querySelectorAll('.card input').forEach(i => i.value = '');
         }
 
-        // --- TABELLEN STEUERUNG ---
-        function toggleTable() {
-            db.ref('table_control/visible').set(!isTableVisible);
-        }
+        function toggleTable() { db.ref('table_control/visible').set(!isTableVisible); }
 
+        // --- VERBESSERTER SYNC ---
         async function syncTable() {
             const status = document.getElementById('sync-status');
-            const url = "https://saisonmanager.de/fvd/1892-2-fbl-herren-nordwest/tabelle";
-            const proxy = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+            const target = "https://saisonmanager.de/fvd/1892-2-fbl-herren-nordwest/tabelle";
+            
+            // Neuer Proxy für höhere Zuverlässigkeit
+            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}&timestamp=${Date.now()}`;
 
             try {
                 const response = await fetch(proxy);
-                const json = await response.json();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(json.contents, 'text/html');
-                const rows = doc.querySelectorAll('table.table tbody tr');
+                if (!response.ok) throw new Error("Proxy-Fehler");
                 
+                const json = await response.json();
+                const html = json.contents;
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const table = doc.querySelector('table');
+                
+                if (!table) throw new Error("Keine Tabelle gefunden");
+                
+                const rows = table.querySelectorAll('tbody tr');
                 let standings = [];
+
                 rows.forEach(row => {
                     const cols = row.querySelectorAll('td');
-                    if (cols.length >= 10) {
+                    if (cols.length >= 9) {
                         standings.push({
-                            pos: cols[0].innerText.trim(),
+                            pos: cols[0].innerText.trim().replace('.', ''),
                             name: cols[2].innerText.trim(),
                             games: cols[3].innerText.trim(),
-                            diff: cols[8].innerText.trim(),
-                            points: cols[9].innerText.trim()
+                            diff: cols[8] ? cols[8].innerText.trim() : '0',
+                            points: cols[9] ? cols[9].innerText.trim() : '0'
                         });
                     }
                 });
@@ -222,13 +228,15 @@
                 if (standings.length > 0) {
                     db.ref('table_data').set({ lastUpdate: Date.now(), standings: standings });
                     status.innerText = "Saisonmanager Sync: OK (" + new Date().toLocaleTimeString() + ")";
+                    status.style.color = "#00ff00";
                 }
             } catch (e) {
-                status.innerText = "Saisonmanager Sync: Fehler!";
+                console.error("Sync Error:", e);
+                status.innerText = "Saisonmanager Sync: Fehler! (Browser-Konsole F12 prüfen)";
+                status.style.color = "#ff4444";
             }
         }
 
-        // --- GLOBAL HOTKEYS ---
         function _getCombo(e) {
             let c = [];
             if (e.ctrlKey) c.push('ctrl');
@@ -251,9 +259,8 @@
             });
         });
 
-        // Initialisierung
         updateTeam();
-        setInterval(syncTable, 5 * 60 * 1000); // Alle 5 Min
+        setInterval(syncTable, 120000); // Alle 2 Minuten
         syncTable();
     </script>
 </body>
