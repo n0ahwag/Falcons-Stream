@@ -2,27 +2,113 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Control - MultiTeam</title>
+    <title>Floorball Control - Hauptmenü</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        /* CSS bleibt größtenteils gleich */
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .team-select { width: 100%; max-width: 400px; padding: 15px; background: #ff4444; border: none; border-radius: 8px; color: white; font-weight: bold; margin-bottom: 20px; font-size: 16px; }
-        .admin-nav { display: flex; gap: 8px; width: 100%; max-width: 400px; margin-bottom: 20px; }
-        .nav-btn { flex: 1; padding: 10px; background: #222; border: 1px solid #444; color: #ccc; text-decoration: none; text-align: center; border-radius: 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 360px; margin-bottom: 20px; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: #121212; 
+            color: white; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        h1 { font-size: 22px; color: #ff4444; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* Team-Auswahl (Wichtig für Multi-Team-Logik) */
+        .team-select { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 15px; 
+            background: #ff4444; 
+            border: none; 
+            border-radius: 8px; 
+            color: white; 
+            font-weight: bold; 
+            margin-bottom: 20px; 
+            font-size: 16px; 
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        /* Erweitertes Navigations-Menü */
+        .admin-nav { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            width: 100%; 
+            max-width: 400px; 
+            margin-bottom: 25px; 
+        }
+
+        .nav-btn { 
+            padding: 12px; 
+            background: #222; 
+            border: 1px solid #444; 
+            color: #ccc; 
+            text-decoration: none; 
+            text-align: center; 
+            border-radius: 8px; 
+            font-size: 11px; 
+            font-weight: bold; 
+            text-transform: uppercase; 
+            transition: 0.3s; 
+        }
+
+        .nav-btn:hover { 
+            border-color: #ff4444; 
+            color: #ff4444; 
+            background: #1a1a1a; 
+        }
+
+        .btn-highlight { border-color: #ff4444; color: white; background: rgba(255,68,68,0.1); }
+
+        /* Karten Design */
+        .card { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            width: 100%; 
+            max-width: 360px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        h2 { color: #eee; font-size: 14px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        label { color: #666; font-size: 10px; text-transform: uppercase; display: block; margin-top: 10px; }
+        
+        input, select { 
+            width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; 
+            border: 1px solid #444; background: #252525; color: white; 
+            box-sizing: border-box; font-size: 14px; 
+        }
+        
         .input-row { display: flex; gap: 10px; }
         .nr-field { width: 80px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; }
-        button.action-btn { width: 100%; padding: 14px; background: #ff4444; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        button.action-btn { 
+            width: 100%; padding: 14px; background: #ff4444; border: none; 
+            border-radius: 6px; color: white; font-weight: bold; cursor: pointer; 
+            margin-top: 10px; font-size: 14px; transition: 0.2s;
+        }
+
+        button.action-btn:active { transform: scale(0.96); }
+        .btn-penalty { background: #444; }
     </style>
 </head>
 <body>
 
     <h1>Floorball Control</h1>
 
+    <!-- Team Selector -->
     <select id="teamSelector" class="team-select" onchange="updateTeam()">
         <option value="2bundesliga">2. Bundesliga</option>
         <option value="regio">Regio</option>
@@ -33,12 +119,15 @@
         <option value="u9">U9</option>
     </select>
 
+    <!-- Erweitertes Menü -->
     <div class="admin-nav">
         <a href="management.html" class="nav-btn">👥 Team</a>
         <a href="lineup-admin.html" class="nav-btn">📋 Aufstellung</a>
-        <a href="help.html" class="nav-btn" style="color:#666">❓ Hilfe</a>
+        <a href="score-admin.html" class="nav-btn btn-highlight">🏆 Scoreboard</a>
+        <a href="help.html" class="nav-btn">❓ Hilfe</a>
     </div>
 
+    <!-- EVENT BEREICH -->
     <div class="card">
         <h2>⚽ Tor</h2>
         <div class="input-row">
@@ -59,12 +148,12 @@
             <input type="text" id="penName" placeholder="Spieler...">
         </div>
         <select id="penDur">
-            <option value="2'">2 Min</option>
-            <option value="2'+2'">2+2 Min</option>
-            <option value="10'">10 Min</option>
-            <option value="MS">MS</option>
+            <option value="2'">2 Minuten</option>
+            <option value="2'+2'">2 + 2 Minuten</option>
+            <option value="10'">10 Minuten</option>
+            <option value="MS">MS (Matchstrafe)</option>
         </select>
-        <button class="action-btn" style="background:#444" onclick="send('penalty')">Strafe anzeigen</button>
+        <button class="action-btn btn-penalty" onclick="send('penalty')">Strafe anzeigen</button>
     </div>
 
     <script>
@@ -85,7 +174,10 @@
 
         function updateTeam() {
             currentT = document.getElementById('teamSelector').value;
-            db.ref('teams/' + currentT + '/players').on('value', (snap) => { players = snap.val() || {}; });
+            // Spieler nur für das ausgewählte Team laden (Autovervollständigung)
+            db.ref('teams/' + currentT + '/players').on('value', (snap) => { 
+                players = snap.val() || {}; 
+            });
         }
 
         function findP(input, target) {
@@ -102,10 +194,15 @@
                 data.duration = document.getElementById('penDur').value;
             }
             if(!data.player) return;
+            
+            // Sendet an das Overlay index.html
             db.ref('lastEvent').set(data);
+            
+            // Felder leeren nach Senden
             document.querySelectorAll('input').forEach(i => i.value = '');
         }
 
+        // Initialisierung
         updateTeam();
     </script>
 </body>
