@@ -11,18 +11,15 @@
         body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         h1 { font-size: 18px; color: #ff4444; margin: 10px 0 20px 0; text-transform: uppercase; letter-spacing: 2px; }
         .team-select { width: 100%; max-width: 400px; padding: 15px; background: #ff4444; border: none; border-radius: 10px; color: white; font-weight: bold; margin-bottom: 20px; font-size: 16px; cursor: pointer; }
-        
-        /* Navigation Grid */
         .admin-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: 400px; margin-bottom: 25px; }
         .nav-btn { padding: 12px; background: #1e1e1e; border: 1px solid #333; color: #bbb; text-decoration: none; text-align: center; border-radius: 8px; font-size: 10px; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
         .nav-btn:hover { border-color: #ff4444; color: #ff4444; }
-
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 360px; margin-bottom: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 360px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         h2 { color: #eee; font-size: 13px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .input-row { display: flex; gap: 10px; margin-top: 10px; }
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; font-size: 14px; outline: none; }
+        .input-row { display: flex; gap: 10px; }
         .nr-field { width: 70px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; font-size: 14px; outline: none; }
-        .action-btn { width: 100%; padding: 15px; background: #ff4444; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .action-btn { width: 100%; padding: 15px; background: #ff4444; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -60,21 +57,6 @@
         <button class="action-btn" onclick="send('goal')">Tor & Heim Score +1</button>
     </div>
 
-    <div class="card">
-        <h2>⚠️ Strafe</h2>
-        <div class="input-row">
-            <input type="number" class="nr-field" id="penNr" placeholder="Nr." oninput="findP(this, 'penName')">
-            <input type="text" id="penName" placeholder="Spieler...">
-        </div>
-        <select id="penDur">
-            <option value="2'">2 Min</option>
-            <option value="2'+2'">2+2 Min</option>
-            <option value="10'">10 Min</option>
-            <option value="MS">MS</option>
-        </select>
-        <button class="action-btn" style="background:#444" onclick="send('penalty')">Strafe anzeigen</button>
-    </div>
-
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
@@ -106,13 +88,9 @@
                 data.assist = document.getElementById('assistName').value;
                 if(!data.player) return;
                 db.ref('scoreboard_active/scoreA').set((curS.scoreA || 0) + 1);
-            } else {
-                data.player = document.getElementById('penName').value;
-                data.duration = document.getElementById('penDur').value;
-                if(!data.player) return;
             }
             db.ref('lastEvent').set(data);
-            document.querySelectorAll('.card input').forEach(i => i.value = '');
+            document.querySelectorAll('input').forEach(i => i.value = '');
         }
 
         // UNIVERSAL HOTKEY EXECUTION
@@ -130,9 +108,13 @@
             Object.keys(hks).forEach(act => {
                 if (hks[act].id === pressed) {
                     e.preventDefault();
-                    let team = act.includes('A') ? 'scoreA' : 'scoreB';
-                    let val = act.includes('plus') ? 1 : -1;
-                    db.ref('scoreboard_active/' + team).set(Math.max(0, (curS[team] || 0) + val));
+                    if (act === 'Penalty-Open') {
+                        window.open('penalty-entry.html?team=' + currentT, 'strafePopup', 'width=400,height=550');
+                    } else {
+                        let team = act.includes('A') ? 'scoreA' : 'scoreB';
+                        let mod = act.includes('plus') ? 1 : -1;
+                        db.ref('scoreboard_active/' + team).set(Math.max(0, (curS[team] || 0) + mod));
+                    }
                 }
             });
         });
