@@ -2,57 +2,156 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Scoreboard & Kombi-Hotkeys</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scoreboard & Hotkey Admin</title>
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 500px; margin-bottom: 20px; }
-        h2 { color: #ff4444; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: #121212; 
+            color: white; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        .nav-header { 
+            width: 100%; 
+            max-width: 500px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+
+        .back-btn { 
+            color: #888; 
+            text-decoration: none; 
+            border: 1px solid #444; 
+            padding: 8px 15px; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            transition: 0.3s;
+        }
+
+        .back-btn:hover { border-color: #ff4444; color: #ff4444; }
+
+        .card { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid #333; 
+            width: 100%; 
+            max-width: 500px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+
+        h2 { color: #ff4444; font-size: 14px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+
+        /* Scoreboard Control */
         .score-ctrl { display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; }
-        .score-display { font-size: 60px; font-weight: 700; color: #ff4444; }
-        button { padding: 12px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; }
+        .score-display { font-size: 60px; font-weight: 700; color: #ff4444; min-width: 80px; text-align: center; }
         
-        /* Hotkey Editor Styles */
-        .hotkey-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 10px; margin: 5px 0; border-radius: 6px; }
-        .key-badge { background: #444; color: #00ff00; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-size: 12px; }
-        .btn-record { font-size: 11px; background: #333; color: #aaa; padding: 6px; border-radius: 4px; border: 1px solid #555; }
-        .btn-record.active { background: #ff4444; color: white; animation: blink 1s infinite; border-color: white; }
+        button { padding: 12px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; transition: 0.2s; }
+        .btn-plus { background: #ff4444; color: white; width: 60px; font-size: 20px; }
+        .btn-minus { background: #444; color: white; width: 40px; margin-top: 5px; }
+
+        /* Hotkey List */
+        .hotkey-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: #252525; 
+            padding: 10px; 
+            margin: 5px 0; 
+            border-radius: 6px; 
+        }
+        .key-badge { 
+            background: #444; 
+            color: #00ff00; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            font-size: 11px; 
+            font-weight: bold;
+        }
+        .btn-record { 
+            font-size: 10px; 
+            background: #333; 
+            color: #aaa; 
+            padding: 6px 10px; 
+            margin-left: 10px; 
+            border: 1px solid #555;
+        }
+        .btn-record.active { 
+            background: #ff4444; 
+            color: white; 
+            animation: blink 1s infinite; 
+            border-color: white;
+        }
+
         @keyframes blink { 50% { opacity: 0.5; } }
-        
-        .nav-header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; margin-bottom: 20px; }
-        .back-btn { color: #888; text-decoration: none; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; font-size: 13px; }
+
+        /* Gallery */
+        .gallery-list { margin-top: 10px; }
+        .gallery-item { 
+            display: flex; 
+            align-items: center; 
+            background: #252525; 
+            padding: 10px; 
+            margin: 8px 0; 
+            border-radius: 8px; 
+            border: 2px solid transparent; 
+        }
+        .gallery-item img { width: 120px; height: 40px; object-fit: contain; margin-right: 15px; background: #000; cursor: pointer; }
+        .gallery-item .name { flex-grow: 1; cursor: pointer; font-size: 14px; }
+        .del-btn { background: none; color: #ff4444; font-size: 18px; cursor: pointer; }
+
+        input[type="text"], input[type="file"] { 
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; 
+            border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; 
+        }
+        .save-btn { width: 100%; background: #28a745; color: white; padding: 14px; cursor: pointer; border-radius: 6px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="nav-header">
         <a href="admin.html" class="back-btn">← Zurück</a>
-        <span style="color:#ff4444; font-weight:bold;">Kombi-Hotkeys Setup</span>
+        <span style="color:#ff4444; font-weight:bold; text-transform:uppercase;">Scoreboard & Hotkeys</span>
     </div>
 
+    <!-- LIVE SCORE -->
     <div class="card">
         <h2>Live Spielstand</h2>
         <div class="score-ctrl">
             <div style="text-align:center">
-                <button style="background:#ff4444; color:white; width:60px" onclick="changeScore('scoreA', 1)">+</button><br>
+                <button class="btn-plus" onclick="changeScore('scoreA', 1)">+</button><br>
                 <div class="score-display" id="dispA">0</div>
-                <button style="background:#444; color:white; width:40px" onclick="changeScore('scoreA', -1)">-</button>
+                <button class="btn-minus" onclick="changeScore('scoreA', -1)">-</button>
             </div>
             <div style="font-size: 24px; color:#444">VS</div>
             <div style="text-align:center">
-                <button style="background:#ff4444; color:white; width:60px" onclick="changeScore('scoreB', 1)">+</button><br>
+                <button class="btn-plus" onclick="changeScore('scoreB', 1)">+</button><br>
                 <div class="score-display" id="dispB">0</div>
-                <button style="background:#444; color:white; width:40px" onclick="changeScore('scoreB', -1)">-</button>
+                <button class="btn-minus" onclick="scoreB_minus()">-</button>
             </div>
         </div>
+        <button style="width:100%; background:#333; color:#888; font-size:11px;" onclick="resetScore()">RESET SCOREBOARD (0:0)</button>
     </div>
 
+    <!-- HOTKEY SETUP -->
     <div class="card">
-        <h2>Hotkeys (Kombinationen möglich)</h2>
-        <p style="font-size: 10px; color: #777;">Klicke auf "Aufnahme" und drücke die Tastenkombination (z.B. Strg + Q).</p>
-        <div id="hotkey-list">
+        <h2>Hotkey Setup (Kombinationen)</h2>
+        <p style="font-size: 10px; color: #777; margin-bottom: 15px;">Klicke Aufnahme und drücke die Kombi (z.B. STRG + Q). Einzeltasten gehen auch.</p>
+        <div id="hotkey-config">
             <div class="hotkey-item"><span>Heim +1</span><div><span class="key-badge" id="key-A-plus">...</span><button class="btn-record" onclick="startRecord('A-plus')">Aufnahme</button></div></div>
             <div class="hotkey-item"><span>Heim -1</span><div><span class="key-badge" id="key-A-minus">...</span><button class="btn-record" onclick="startRecord('A-minus')">Aufnahme</button></div></div>
             <div class="hotkey-item"><span>Gast +1</span><div><span class="key-badge" id="key-B-plus">...</span><button class="btn-record" onclick="startRecord('B-plus')">Aufnahme</button></div></div>
@@ -60,7 +159,19 @@
         </div>
     </div>
 
+    <!-- GALLERY -->
+    <div class="card">
+        <h2>Design Galerie</h2>
+        <div id="gallery" class="gallery-list">Lade Designs...</div>
+        <hr style="border:0; border-top:1px solid #333; margin:25px 0;">
+        <h3>Neues Design hochladen</h3>
+        <input type="text" id="imgName" placeholder="Design Name (z.B. FRA vs TVE)">
+        <input type="file" id="imgFile" accept="image/*">
+        <button class="save-btn" onclick="uploadDesign()">In Galerie speichern</button>
+    </div>
+
     <script>
+        // FIREBASE KONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
             authDomain: "obs-overlay-2950c.firebaseapp.com",
@@ -77,7 +188,7 @@
         let activeHotkeys = {};
         let recordingAction = null;
 
-        // Sync Score
+        // 1. Sync Spielstand
         db.ref('scoreboard_active').on('value', snap => {
             const data = snap.val() || {};
             scores = { scoreA: data.scoreA || 0, scoreB: data.scoreB || 0 };
@@ -85,7 +196,15 @@
             document.getElementById('dispB').innerText = scores.scoreB;
         });
 
-        // Sync Hotkeys
+        function changeScore(team, val) {
+            let n = (scores[team] || 0) + val;
+            db.ref('scoreboard_active/' + team).set(Math.max(0, n));
+        }
+
+        function scoreB_minus() { changeScore('scoreB', -1); }
+        function resetScore() { if(confirm("Score auf 0:0 setzen?")) { db.ref('scoreboard_active/scoreA').set(0); db.ref('scoreboard_active/scoreB').set(0); } }
+
+        // 2. Hotkey Logik (Verbesserte Aufnahme)
         db.ref('hotkey_config').on('value', snap => {
             activeHotkeys = snap.val() || {};
             Object.keys(activeHotkeys).forEach(id => {
@@ -94,56 +213,109 @@
             });
         });
 
-        function changeScore(team, val) {
-            db.ref('scoreboard_active/' + team).set(Math.max(0, scores[team] + val));
-        }
-
         function startRecord(action) {
             recordingAction = action;
-            document.querySelectorAll('.btn-record').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.btn-record').forEach(b => {
+                b.classList.remove('active');
+                b.innerText = "Aufnahme";
+            });
             event.target.classList.add('active');
-        }
-
-        // Hilfsfunktion: Taste in String umwandeln (z.B. "ctrl+shift+q")
-        function getComboString(e) {
-            let combo = [];
-            if (e.ctrlKey) combo.push('ctrl');
-            if (e.shiftKey) combo.push('shift');
-            if (e.altKey) combo.push('alt');
-            if (!['Control', 'Shift', 'Alt'].includes(e.key)) {
-                combo.push(e.key.toLowerCase());
-            }
-            return {
-                id: combo.join('+'),
-                display: combo.join(' + ').toUpperCase()
-            };
+            event.target.innerText = "Drücke Tasten...";
         }
 
         window.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT') return;
 
             if (recordingAction) {
+                // Warte auf die Haupttaste (kein Strg/Shift alleine)
+                if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return;
+
                 e.preventDefault();
-                const combo = getComboString(e);
-                if (combo.id === "") return; // Nur Modifikatoren gedrückt
-                
-                db.ref('hotkey_config/' + recordingAction).set(combo);
-                recordingAction = null;
-                document.querySelectorAll('.btn-record').forEach(b => b.classList.remove('active'));
+                let combo = [];
+                if (e.ctrlKey) combo.push('ctrl');
+                if (e.shiftKey) combo.push('shift');
+                if (e.altKey) combo.push('alt');
+                combo.push(e.key.toLowerCase());
+
+                const saveObj = {
+                    id: combo.join('+'),
+                    display: combo.join(' + ').toUpperCase()
+                };
+
+                db.ref('hotkey_config/' + recordingAction).set(saveObj).then(() => {
+                    recordingAction = null;
+                    document.querySelectorAll('.btn-record').forEach(b => {
+                        b.classList.remove('active');
+                        b.innerText = "Aufnahme";
+                    });
+                });
                 return;
             }
 
-            const pressed = getComboString(e).id;
-            Object.keys(activeHotkeys).forEach(action => {
-                if (activeHotkeys[action].id === pressed) {
+            // Normale Hotkey Ausführung
+            handleHotkeys(e);
+        });
+
+        function handleHotkeys(e) {
+            if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return;
+            let c = [];
+            if (e.ctrlKey) c.push('ctrl');
+            if (e.shiftKey) c.push('shift');
+            if (e.altKey) c.push('alt');
+            c.push(e.key.toLowerCase());
+            const pressed = c.join('+');
+
+            Object.keys(activeHotkeys).forEach(act => {
+                if (activeHotkeys[act].id === pressed) {
                     e.preventDefault();
-                    if (action === 'A-plus') changeScore('scoreA', 1);
-                    if (action === 'A-minus') changeScore('scoreA', -1);
-                    if (action === 'B-plus') changeScore('scoreB', 1);
-                    if (action === 'B-minus') changeScore('scoreB', -1);
+                    let team = act.includes('A') ? 'scoreA' : 'scoreB';
+                    let mod = act.includes('plus') ? 1 : -1;
+                    changeScore(team, mod);
                 }
             });
+        }
+
+        // 3. Galerie Management
+        db.ref('score_designs').on('value', snap => {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            const data = snap.val() || {};
+            Object.keys(data).forEach(id => {
+                const design = data[id];
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.innerHTML = `
+                    <img src="${design.img}" onclick="setActive('${id}')">
+                    <span class="name" onclick="setActive('${id}')">${design.name}</span>
+                    <button class="del-btn" onclick="deleteDesign('${id}')">✕</button>
+                `;
+                gallery.appendChild(div);
+            });
         });
+
+        function setActive(id) {
+            db.ref('score_designs/' + id).once('value', snap => {
+                db.ref('scoreboard_active/img').set(snap.val().img);
+            });
+        }
+
+        function deleteDesign(id) {
+            if(confirm("Design wirklich löschen?")) db.ref('score_designs/' + id).remove();
+        }
+
+        function uploadDesign() {
+            const name = document.getElementById('imgName').value;
+            const file = document.getElementById('imgFile').files[0];
+            if(!name || !file) return alert("Bitte Name eingeben und Bild wählen!");
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                db.ref('score_designs').push({ name: name, img: e.target.result });
+                document.getElementById('imgName').value = '';
+                document.getElementById('imgFile').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
     </script>
 </body>
 </html>
