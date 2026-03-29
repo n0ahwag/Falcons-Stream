@@ -2,62 +2,56 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Scoreboard Steuerung</title>
+    <title>Scoreboard Design Management</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 500px; margin-bottom: 20px; }
-        .row { display: flex; justify-content: space-around; align-items: center; text-align: center; margin-bottom: 20px; }
-        .score-num { font-size: 48px; font-weight: bold; margin: 10px 0; }
-        button { padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; border: none; }
-        .btn-add { background: #ff4444; color: white; font-size: 20px; }
-        .btn-sub { background: #444; color: white; }
         
-        .gallery-item { display: flex; align-items: center; background: #252525; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+        /* Score-Buttons */
+        .score-ctrl { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .score-display { font-size: 40px; font-weight: bold; color: #ff4444; }
+        button { padding: 10px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
+        .btn-plus { background: #ff4444; color: white; width: 50px; }
+
+        /* Galerie */
+        .gallery-item { 
+            display: flex; align-items: center; background: #252525; 
+            padding: 10px; margin: 10px 0; border-radius: 8px; 
+            cursor: pointer; border: 2px solid transparent; 
+        }
         .gallery-item:hover { border-color: #ff4444; }
-        .gallery-item img { width: 50px; height: 30px; object-fit: contain; margin-right: 10px; background: white; border-radius: 3px; }
-        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; box-sizing: border-box; }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #888; text-decoration: none; margin: 0 10px; font-size: 14px; }
+        .gallery-item img { width: 100px; height: 50px; object-fit: contain; margin-right: 15px; background: #000; }
+        .gallery-item.active { border-color: #00ff00; }
+
+        input, button.save-btn { width: 100%; padding: 12px; margin: 10px 0; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <div class="nav"><a href="admin.html">← Zurück zur Hauptsteuerung</a></div>
-
-    <!-- SPIELSTEUERUNG -->
     <div class="card">
-        <div class="row">
-            <div>
-                <div id="displayA">Team A</div>
-                <div class="score-num" id="sA">0</div>
-                <button class="btn-add" onclick="changeScore('scoreA', 1)">+1</button>
-                <button class="btn-sub" onclick="changeScore('scoreA', -1)">-1</button>
-            </div>
-            <div style="font-size: 24px;">VS</div>
-            <div>
-                <div id="displayB">Team B</div>
-                <div class="score-num" id="sB">0</div>
-                <button class="btn-add" onclick="changeScore('scoreB', 1)">+1</button>
-                <button class="btn-sub" onclick="changeScore('scoreB', -1)">-1</button>
-            </div>
+        <h2>Live Spielstand</h2>
+        <div class="score-ctrl">
+            <button class="btn-plus" onclick="changeScore('scoreA', 1)">+</button>
+            <div class="score-display" id="dispA">0</div>
+            <div style="font-size: 20px;">VS</div>
+            <div class="score-display" id="dispB">0</div>
+            <button class="btn-plus" onclick="changeScore('scoreB', 1)">+</button>
         </div>
-        <button style="width:100%; background: #444; color: white;" onclick="resetScores()">Reset Scoreboard</button>
+        <button style="width:100%; background:#444; color:white;" onclick="resetScore()">Reset Score</button>
     </div>
 
-    <!-- GALERIE & UPLOAD -->
     <div class="card">
-        <h3>Design / Team Galerie</h3>
-        <div id="gallery">Lade Galerie...</div>
+        <h2>Design Galerie</h2>
+        <div id="gallery">Lade Bilder...</div>
         
-        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
         
-        <h4>Neues Team-Set hinzufügen</h4>
-        <input type="text" id="newName" placeholder="Name (z.B. FRA)">
-        <label style="font-size: 10px; color: #888;">Logo hochladen:</label>
-        <input type="file" id="newLogo" accept="image/*">
-        <button class="btn-add" style="width: 100%;" onclick="uploadTemplate()">In Galerie speichern</button>
+        <h3>Neues Scoreboard hochladen</h3>
+        <input type="text" id="imgName" placeholder="Name des Designs (z.B. FRA-TVE)">
+        <input type="file" id="imgFile" accept="image/*">
+        <button class="save-btn" style="background:#28a745; color:white;" onclick="uploadDesign()">In Galerie speichern</button>
     </div>
 
     <script>
@@ -73,63 +67,47 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. Spielstand steuern
-        let currentScores = { scoreA: 0, scoreB: 0 };
-        db.ref('scoreboard').on('value', snap => {
+        let scores = { scoreA: 0, scoreB: 0 };
+
+        // Daten laden
+        db.ref('scoreboard_active').on('value', snap => {
             const data = snap.val() || {};
-            currentScores = { scoreA: data.scoreA || 0, scoreB: data.scoreB || 0 };
-            document.getElementById('sA').innerText = currentScores.scoreA;
-            document.getElementById('sB').innerText = currentScores.scoreB;
-            document.getElementById('displayA').innerText = data.teamA || "Home";
-            document.getElementById('displayB').innerText = data.teamB || "Away";
+            scores = { scoreA: data.scoreA || 0, scoreB: data.scoreB || 0 };
+            document.getElementById('dispA').innerText = scores.scoreA;
+            document.getElementById('dispB').innerText = scores.scoreB;
         });
 
         function changeScore(team, val) {
-            let newVal = currentScores[team] + val;
-            if(newVal < 0) newVal = 0;
-            db.ref('scoreboard/' + team).set(newVal);
+            db.ref('scoreboard_active/' + team).set(scores[team] + val);
         }
 
-        function resetScores() {
-            if(confirm("Score wirklich auf 0 setzen?")) {
-                db.ref('scoreboard/scoreA').set(0);
-                db.ref('scoreboard/scoreB').set(0);
-            }
-        }
+        function resetScore() { db.ref('scoreboard_active/scoreA').set(0); db.ref('scoreboard_active/scoreB').set(0); }
 
-        // 2. Galerie Management
-        db.ref('scoreboard_templates').on('value', snap => {
+        // Galerie laden
+        db.ref('score_designs').on('value', snap => {
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = '';
             const data = snap.val() || {};
-            Object.keys(data).forEach(key => {
-                const item = data[key];
+            Object.keys(data).forEach(id => {
+                const design = data[id];
                 const div = document.createElement('div');
                 div.className = 'gallery-item';
-                div.innerHTML = `<img src="${item.logo}"> <span>${item.name}</span>`;
-                div.onclick = () => selectTemplate(item);
+                div.innerHTML = `<img src="${design.img}"> <span>${design.name}</span>`;
+                div.onclick = () => db.ref('scoreboard_active/img').set(design.img);
                 gallery.appendChild(div);
             });
         });
 
-        function selectTemplate(item) {
-            const side = confirm(`Als Team A (Home) setzen? \n(Abbrechen für Team B / Away)`) ? 'A' : 'B';
-            db.ref('scoreboard/team' + side).set(item.name);
-            db.ref('scoreboard/logo' + side).set(item.logo);
-        }
-
-        // 3. Datei-Upload (Base64 Konvertierung)
-        function uploadTemplate() {
-            const name = document.getElementById('newName').value;
-            const file = document.getElementById('newLogo').files[0];
-            if(!name || !file) return alert("Bitte Name und Logo wählen!");
+        // Bild hochladen (Base64)
+        function uploadDesign() {
+            const name = document.getElementById('imgName').value;
+            const file = document.getElementById('imgFile').files[0];
+            if(!name || !file) return alert("Name und Datei wählen!");
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                const base64Image = e.target.result;
-                db.ref('scoreboard_templates').push({ name: name, logo: base64Image });
-                alert("Erfolgreich gespeichert!");
-                document.getElementById('newName').value = "";
+                db.ref('score_designs').push({ name: name, img: e.target.result });
+                alert("Gespeichert!");
             };
             reader.readAsDataURL(file);
         }
