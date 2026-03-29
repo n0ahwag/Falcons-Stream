@@ -121,17 +121,31 @@
         }
 
         loadPlayers();
-                // UNIVERSAL HOTKEY LISTENER
+               // --- UNIVERSAL COMBO-HOTKEY LISTENER ---
             let _curS = {scoreA:0, scoreB:0}, _hks = {};
             db.ref('scoreboard_active').on('value', s => { _curS = s.val() || {scoreA:0, scoreB:0}; });
-            db.ref('hotkey_config').on('value', s => { _hks = s.val() || { 'A-plus':'q','A-minus':'a','B-plus':'w','B-minus':'s' }; });
+            db.ref('hotkey_config').on('value', s => { _hks = s.val() || {}; });
+            
+            function _getCombo(e) {
+                let c = [];
+                if (e.ctrlKey) c.push('ctrl');
+                if (e.shiftKey) c.push('shift');
+                if (e.altKey) c.push('alt');
+                if (!['Control', 'Shift', 'Alt'].includes(e.key)) c.push(e.key.toLowerCase());
+                return c.join('+');
+            }
+            
             window.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-                const key = e.key.toLowerCase();
-                if (key === _hks['A-plus']) db.ref('scoreboard_active/scoreA').set((_curS.scoreA||0)+1);
-                if (key === _hks['A-minus']) db.ref('scoreboard_active/scoreA').set(Math.max(0,(_curS.scoreA||0)-1));
-                if (key === _hks['B-plus']) db.ref('scoreboard_active/scoreB').set((_curS.scoreB||0)+1);
-                if (key === _hks['B-minus']) db.ref('scoreboard_active/scoreB').set(Math.max(0,(_curS.scoreB||0)-1));
+                const pressed = _getCombo(e);
+                Object.keys(_hks).forEach(act => {
+                    if (_hks[act].id === pressed) {
+                        e.preventDefault();
+                        let team = act.includes('A') ? 'scoreA' : 'scoreB';
+                        let val = act.includes('plus') ? 1 : -1;
+                        db.ref('scoreboard_active/' + team).set(Math.max(0, (_curS[team]||0) + val));
+                    }
+                });
             });
     </script>
 </body>
