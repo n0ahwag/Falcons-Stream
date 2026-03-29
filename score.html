@@ -10,53 +10,45 @@
         
         body { margin: 0; padding: 0; background: transparent; font-family: 'Poppins', sans-serif; overflow: hidden; }
 
-        /* Das Scoreboard-Bild als Container */
         #scoreboard-container {
             position: absolute;
             top: 40px;
             left: 40px;
-            width: auto;
-            height: auto;
             display: inline-block;
         }
 
         #scoreboard-img {
             display: block;
-            max-width: 500px; /* Du kannst die Größe hier anpassen */
+            height: 120px; /* Höhe für beide Zeilen zusammen */
+            width: auto;
         }
 
-        /* Die Zahlen auf dem Bild positionieren */
-        .score {
+        /* Container für die Score-Zahlen */
+        .score-box {
             position: absolute;
+            right: 0;
+            width: 75px; /* Breite der dunklen Box im Bild */
+            height: 60px; /* Höhe einer einzelnen Zeile */
+            display: flex;
+            justify-content: center;
+            align-items: center;
             color: white;
-            font-size: 38px;
+            font-size: 36px;
             font-weight: 800;
-            width: 80px;
-            text-align: center;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
         }
 
-        /* Position der Zahlen (Anpassung an dein Bild-Design) */
-        #scoreA {
-            right: 0px; 
-            top: 10px; /* Höhe für das obere Team (FRA) */
-        }
-
-        #scoreB {
-            right: 0px; 
-            top: 75px; /* Höhe für das untere Team (TVE) */
-        }
+        /* Exakte Positionierung auf den dunklen Flächen */
+        #scoreA { top: 0; }
+        #scoreB { top: 60px; }
     </style>
 </head>
 <body>
 
     <div id="scoreboard-container">
-        <!-- Das Bild, das du hochlädst -->
         <img id="scoreboard-img" src="">
-        
-        <!-- Die Live-Zahlen darüber -->
-        <div id="scoreA" class="score">0</div>
-        <div id="scoreB" class="score">0</div>
+        <div id="scoreA" class="score-box">0</div>
+        <div id="scoreB" class="score-box">0</div>
     </div>
 
     <script>
@@ -74,7 +66,7 @@
 
         db.ref('scoreboard_active').on('value', (snap) => {
             const data = snap.val() || {};
-            document.getElementById('scoreboard-img').src = data.img || "";
+            if(data.img) document.getElementById('scoreboard-img').src = data.img;
             document.getElementById('scoreA').innerText = data.scoreA || 0;
             document.getElementById('scoreB').innerText = data.scoreB || 0;
         });
