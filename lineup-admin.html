@@ -139,6 +139,18 @@
         }
 
         changeTeam();
+                // UNIVERSAL HOTKEY LISTENER
+            let _curS = {scoreA:0, scoreB:0}, _hks = {};
+            db.ref('scoreboard_active').on('value', s => { _curS = s.val() || {scoreA:0, scoreB:0}; });
+            db.ref('hotkey_config').on('value', s => { _hks = s.val() || { 'A-plus':'q','A-minus':'a','B-plus':'w','B-minus':'s' }; });
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                const key = e.key.toLowerCase();
+                if (key === _hks['A-plus']) db.ref('scoreboard_active/scoreA').set((_curS.scoreA||0)+1);
+                if (key === _hks['A-minus']) db.ref('scoreboard_active/scoreA').set(Math.max(0,(_curS.scoreA||0)-1));
+                if (key === _hks['B-plus']) db.ref('scoreboard_active/scoreB').set((_curS.scoreB||0)+1);
+                if (key === _hks['B-minus']) db.ref('scoreboard_active/scoreB').set(Math.max(0,(_curS.scoreB||0)-1));
+            });
     </script>
 </body>
 </html>
