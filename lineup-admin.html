@@ -2,37 +2,67 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Lineup Admin</title>
+    <title>Lineup Control - Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .nav { margin-bottom: 20px; }
-        .nav a { color: #888; text-decoration: none; margin: 0 10px; font-size: 14px; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 8px; width: 100%; max-width: 400px; margin-bottom: 15px; }
-        h2 { font-size: 14px; color: #ff4444; text-transform: uppercase; margin-top: 0; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .full { grid-column: span 2; }
-        label { font-size: 10px; color: #666; display: block; margin-top: 5px; }
-        select { width: 100%; background: #252525; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; }
-        .controls { display: flex; gap: 5px; margin-top: 10px; }
-        button { flex: 1; padding: 10px; cursor: pointer; font-weight: bold; border-radius: 4px; border: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+        
+        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .nav { width: 100%; max-width: 600px; display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .nav a { color: #888; text-decoration: none; font-size: 12px; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; text-transform: uppercase; }
+        .nav a:hover { color: #ff4444; border-color: #ff4444; }
+
+        h1 { color: #ff4444; text-transform: uppercase; font-size: 20px; letter-spacing: 2px; }
+
+        /* Auto-Cycle Button */
+        .auto-btn { 
+            background: linear-gradient(90deg, #ff4444, #b30000); 
+            color: white; border: none; padding: 15px 30px; 
+            border-radius: 50px; font-weight: bold; cursor: pointer; 
+            margin-bottom: 30px; text-transform: uppercase; box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+        }
+        .auto-btn:disabled { background: #444; opacity: 0.5; cursor: not-allowed; }
+
+        .line-section { background: #1e1e1e; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; margin-bottom: 40px; border: 1px solid #333; }
+        h2 { text-align: center; color: #eee; font-size: 16px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        /* Taktik Grid Layout 2-1-2 */
+        .pitch { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        .pitch-row { display: flex; gap: 15px; justify-content: center; width: 100%; }
+
+        .player-input-box { background: #252525; padding: 8px; border-radius: 6px; width: 140px; border: 1px solid #444; }
+        .player-input-box label { font-size: 9px; color: #ff4444; font-weight: bold; display: block; text-transform: uppercase; }
+        .player-input-box input { width: 100%; background: transparent; border: none; color: white; font-size: 12px; padding: 2px 0; outline: none; }
+        .player-input-box .nr-in { width: 40px; border-bottom: 1px solid #444; font-weight: bold; margin-bottom: 4px; }
+        .player-input-box .name-out { color: #aaa; font-size: 11px; font-style: italic; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+        .controls { display: flex; gap: 10px; margin-top: 20px; }
+        .btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-save { background: #28a745; color: white; }
         .btn-show { background: #ff4444; color: white; }
         .btn-hide { background: #444; color: white; }
-        .btn-save { background: #28a745; color: white; width: 100%; margin-top: 10px; }
+        
+        #status-msg { position: fixed; bottom: 20px; background: #28a745; padding: 10px 20px; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
 
     <div class="nav">
         <a href="admin.html">← Events</a>
-        <a href="management.html">Team</a>
+        <a href="management.html">Spielerliste</a>
     </div>
 
-    <h1>Lineup Management</h1>
+    <h1>Aufstellungs-Management</h1>
 
-    <!-- 3 Reihen Steuerung -->
-    <div id="lines-container"></div>
+    <button id="cycleBtn" class="auto-btn" onclick="startAutoCycle()">🔄 Auto-Durchlauf starten (7s/Reihe)</button>
+
+    <div id="lines-wrapper">
+        <!-- Reihen werden per JS generiert -->
+    </div>
+
+    <div id="status-msg">Gespeichert!</div>
 
     <script>
         const firebaseConfig = {
@@ -48,63 +78,122 @@
         const db = firebase.database();
 
         let players = {};
-        const positions = ['LW', 'RW', 'C', 'LD', 'RD', 'G'];
+        const posOrder = ['LW', 'RW', 'C', 'LD', 'RD', 'G'];
 
-        // Spieler laden für die Dropdowns
+        // 1. Spielerliste laden für Autocomplete
         db.ref('players').on('value', (snap) => {
             players = snap.val() || {};
-            initAdmin();
+            buildUI();
         });
 
-        function initAdmin() {
-            const container = document.getElementById('lines-container');
-            container.innerHTML = '';
+        function buildUI() {
+            const wrapper = document.getElementById('lines-wrapper');
+            wrapper.innerHTML = '';
 
-            [1, 2, 3].forEach(num => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                let html = `<h2>Reihe ${num}</h2><div class="grid">`;
-                
-                positions.forEach(pos => {
-                    html += `<div><label>${pos}</label><select id="l${num}-${pos}"><option value="">- Leer -</option>`;
-                    Object.keys(players).sort((a,b)=>a-b).forEach(nr => {
-                        html += `<option value="${players[nr]}">#${nr} ${players[nr]}</option>`;
-                    });
-                    html += `</select></div>`;
-                });
-
-                html += `</div>
-                    <button class="btn-save" onclick="saveLine(${num})">Speichern</button>
+            [1, 2, 3].forEach(line => {
+                const section = document.createElement('div');
+                section.className = 'line-section';
+                section.innerHTML = `
+                    <h2>Reihe ${line}</h2>
+                    <div class="pitch">
+                        <div class="pitch-row">
+                            ${slot(line, 'LW', 'Left Wing')}
+                            ${slot(line, 'RW', 'Right Wing')}
+                        </div>
+                        <div class="pitch-row">
+                            ${slot(line, 'C', 'Center')}
+                        </div>
+                        <div class="pitch-row">
+                            ${slot(line, 'LD', 'Left Defense')}
+                            ${slot(line, 'RD', 'Right Defense')}
+                        </div>
+                        <div class="pitch-row" style="margin-top:10px">
+                            ${slot(line, 'G', 'Goalie')}
+                        </div>
+                    </div>
                     <div class="controls">
-                        <button class="btn-show" onclick="toggleLine(${num}, true)">Einblenden</button>
-                        <button class="btn-hide" onclick="toggleLine(${num}, false)">Ausblenden</button>
-                    </div>`;
-                card.innerHTML = html;
-                container.appendChild(card);
-                loadSavedLine(num);
+                        <button class="btn btn-save" onclick="saveLine(${line})">Speichern</button>
+                        <button class="btn btn-show" onclick="showLine(${line}, true)">Einblenden</button>
+                        <button class="btn btn-hide" onclick="showLine(${line}, false)">Ausblenden</button>
+                    </div>
+                `;
+                wrapper.appendChild(section);
+                loadSavedData(line);
             });
         }
 
-        function saveLine(num) {
+        function slot(line, pos, label) {
+            return `
+                <div class="player-input-box">
+                    <label>${label}</label>
+                    <input type="number" class="nr-in" id="nr-${line}-${pos}" placeholder="Nr." oninput="autoComplete(${line}, '${pos}')">
+                    <span class="name-out" id="name-${line}-${pos}">-</span>
+                </div>
+            `;
+        }
+
+        function autoComplete(line, pos) {
+            const nr = document.getElementById(`nr-${line}-${pos}`).value;
+            const nameSpan = document.getElementById(`name-${line}-${pos}`);
+            if (players[nr]) {
+                nameSpan.innerText = players[nr];
+            } else {
+                nameSpan.innerText = "-";
+            }
+        }
+
+        function saveLine(line) {
             const data = {};
-            positions.forEach(pos => {
-                data[pos] = document.getElementById(`l${num}-${pos}`).value;
+            posOrder.forEach(pos => {
+                data[pos] = document.getElementById(`name-${line}-${pos}`).innerText;
             });
-            db.ref('lineups/' + num).set(data);
-            alert("Reihe " + num + " gespeichert!");
+            db.ref('lineups/' + line).set(data).then(() => {
+                showToast();
+            });
         }
 
-        function loadSavedLine(num) {
-            db.ref('lineups/' + num).once('value', (snap) => {
+        function loadSavedData(line) {
+            db.ref('lineups/' + line).once('value', (snap) => {
                 const data = snap.val() || {};
-                positions.forEach(pos => {
-                    if(data[pos]) document.getElementById(`l${num}-${pos}`).value = data[pos];
+                // Wir müssen hier rückwärts suchen: Da wir nur Namen speichern, 
+                // schauen wir in der player-DB nach der Nr zum Namen
+                posOrder.forEach(pos => {
+                    const playerName = data[pos] || "";
+                    if (playerName) {
+                        document.getElementById(`name-${line}-${pos}`).innerText = playerName;
+                        // Nummer finden
+                        const nr = Object.keys(players).find(key => players[key] === playerName);
+                        if(nr) document.getElementById(`nr-${line}-${pos}`).value = nr;
+                    }
                 });
             });
         }
 
-        function toggleLine(num, show) {
-            db.ref('lineup_control').set({ visible: show, activeLine: num });
+        function showLine(line, visible) {
+            db.ref('lineup_control').set({ activeLine: line, visible: visible });
+        }
+
+        // AUTO CYCLE MODUS
+        async function startAutoCycle() {
+            const btn = document.getElementById('cycleBtn');
+            btn.disabled = true;
+            btn.innerText = "Zyklus läuft...";
+
+            for (let i = 1; i <= 3; i++) {
+                btn.innerText = `Reihe ${i} wird angezeigt...`;
+                await db.ref('lineup_control').set({ activeLine: i, visible: true });
+                await new Promise(r => setTimeout(r, 7000)); // 7 Sekunden warten
+            }
+
+            await db.ref('lineup_control').set({ visible: false });
+            btn.disabled = false;
+            btn.innerText = "🔄 Auto-Durchlauf starten (7s/Reihe)";
+        }
+
+        function showToast() {
+            const t = document.getElementById('status-msg');
+            t.style.display = "block";
+            setTimeout(() => t.style.display="none", 2000);
         }
     </script>
 </body>
