@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Overlay Slim</title>
+    <title>Floorball Overlay - Goal & Penalty</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
@@ -10,17 +10,16 @@
         
         body { margin: 0; padding: 0; overflow: hidden; font-family: 'Poppins', sans-serif; background: transparent; }
 
-        /* Schlankerer Container, unten mittig */
-        #goal-container {
+        #event-container {
             position: absolute;
             bottom: 12%; 
             left: 50%;
             transform: translateX(-50%) translateY(30px);
-            width: 350px; /* Schmaler */
+            width: 380px;
             background: rgba(10, 10, 10, 0.9);
             backdrop-filter: blur(10px);
             color: white;
-            padding: 12px 20px; /* Weniger klobig */
+            padding: 12px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -29,45 +28,45 @@
             opacity: 0;
             visibility: hidden;
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            border-radius: 6px; /* Eckiger/Moderner */
-            overflow: hidden; /* Damit der Balken nicht übersteht */
+            border-radius: 6px;
+            overflow: hidden;
         }
 
-        #goal-container.active {
+        #event-container.active {
             opacity: 1;
             visibility: visible;
             transform: translateX(-50%) translateY(0);
         }
 
-        .goal-label {
+        /* Label Farbe ändert sich leicht bei Strafe */
+        .event-label {
             font-size: 10px;
             text-transform: uppercase;
-            color: #ff4444; /* Etwas helleres Rot für bessere Lesbarkeit */
+            color: #ff4444; 
             font-weight: 700;
             letter-spacing: 3px;
             margin-bottom: 2px;
         }
 
-        .scorer-name {
-            font-size: 20px; /* Kleinere Schrift */
-            font-weight: 500; /* Dünnere Schrift */
+        .player-name {
+            font-size: 22px;
+            font-weight: 500;
             line-height: 1.2;
-            margin-bottom: 0px;
+            text-transform: uppercase;
         }
 
-        .assist-name {
-            font-size: 13px;
+        .detail-text {
+            font-size: 14px;
             color: #aaa;
             font-weight: 300;
             font-style: italic;
         }
 
-        /* Nur der ablaufende Balken am unteren Rand */
         .progress-bar {
             position: absolute;
             bottom: 0;
             left: 0;
-            height: 3px; /* Sehr dünner Balken */
+            height: 4px;
             background: #ff0000;
             width: 0%;
         }
@@ -84,10 +83,10 @@
 </head>
 <body>
 
-    <div id="goal-container">
-        <div class="goal-label">Tor erzielt</div>
-        <div id="scorer" class="scorer-name">-</div>
-        <div id="assist" class="assist-name">-</div>
+    <div id="event-container">
+        <div id="label" class="event-label">Ereignis</div>
+        <div id="player" class="player-name">-</div>
+        <div id="detail" class="detail-text">-</div>
         <div class="progress-bar"></div>
     </div>
 
@@ -104,25 +103,32 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const container = document.getElementById('goal-container');
+        const container = document.getElementById('event-container');
         
         let initialLoad = true;
 
-        db.ref('lastGoal').on('value', (snapshot) => {
+        // Wir hören auf den Pfad "lastEvent"
+        db.ref('lastEvent').on('value', (snapshot) => {
             if (initialLoad) {
                 initialLoad = false;
                 return;
             }
             const data = snapshot.val();
-            if (data && data.scorer) {
-                document.getElementById('scorer').innerText = data.scorer;
-                document.getElementById('assist').innerText = data.assist ? `Assist: ${data.assist}` : '';
-                
+            if (data) {
+                if (data.type === 'goal') {
+                    document.getElementById('label').innerText = "Tor erzielt";
+                    document.getElementById('label').style.color = "#ff4444";
+                    document.getElementById('player').innerText = data.player;
+                    document.getElementById('detail').innerText = data.assist ? `Assist: ${data.assist}` : "";
+                } else if (data.type === 'penalty') {
+                    document.getElementById('label').innerText = "Zeitstrafe";
+                    document.getElementById('label').style.color = "#ffcc00"; // Gelb-Orange für Strafe
+                    document.getElementById('player').innerText = data.player;
+                    document.getElementById('detail').innerText = `Dauer: ${data.duration}`;
+                }
+
                 container.classList.add('active');
-                
-                setTimeout(() => {
-                    container.classList.remove('active');
-                }, 5000);
+                setTimeout(() => { container.classList.remove('active'); }, 5000);
             }
         });
     </script>
