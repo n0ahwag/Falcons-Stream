@@ -188,32 +188,36 @@
 
         function toggleTable() { db.ref('table_control/visible').set(!isTableVisible); }
 
-        // --- VERBESSERTER SYNC ---
+       // --- VERBESSERTER SYNC MIT NEUEM PROXY ---
         async function syncTable() {
             const status = document.getElementById('sync-status');
-            const target = "https://saisonmanager.de/fvd/1892-2-fbl-herren-nordwest/tabelle";
+            const targetUrl = "https://saisonmanager.de/fvd/1892-2-fbl-herren-nordwest/tabelle";
             
-            // Neuer Proxy für höhere Zuverlässigkeit
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}&timestamp=${Date.now()}`;
+            // Wir nutzen corsproxy.io - dieser ist aktuell sehr stabil für GitHub Pages
+            const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(targetUrl);
 
             try {
-                const response = await fetch(proxy);
-                if (!response.ok) throw new Error("Proxy-Fehler");
+                status.innerText = "Saisonmanager Sync: Lade...";
+                status.style.color = "#888";
+
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Netzwerk-Antwort war nicht ok");
                 
-                const json = await response.json();
-                const html = json.contents;
+                const html = await response.text();
 
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
-                const table = doc.querySelector('table');
                 
-                if (!table) throw new Error("Keine Tabelle gefunden");
+                // Wir suchen die Tabelle im HTML des Saisonmanagers
+                const table = doc.querySelector('table.table');
+                if (!table) throw new Error("Tabelle auf der Zielseite nicht gefunden");
                 
                 const rows = table.querySelectorAll('tbody tr');
                 let standings = [];
 
                 rows.forEach(row => {
                     const cols = row.querySelectorAll('td');
+                    // Saisonmanager Tabellen haben meist ca. 10 Spalten
                     if (cols.length >= 9) {
                         standings.push({
                             pos: cols[0].innerText.trim().replace('.', ''),
@@ -226,17 +230,25 @@
                 });
 
                 if (standings.length > 0) {
-                    db.ref('table_data').set({ lastUpdate: Date.now(), standings: standings });
+                    // Daten in Firebase speichern
+                    db.ref('table_data').set({
+                        lastUpdate: Date.now(),
+                        standings: standings
+                    });
                     status.innerText = "Saisonmanager Sync: OK (" + new Date().toLocaleTimeString() + ")";
                     status.style.color = "#00ff00";
+                } else {
+                    throw new Error("Keine Daten in der Tabelle gefunden");
                 }
+
             } catch (e) {
-                console.error("Sync Error:", e);
-                status.innerText = "Saisonmanager Sync: Fehler! (Browser-Konsole F12 prüfen)";
+                console.error("Sync-Fehler Details:", e);
+                status.innerText = "Saisonmanager Sync: Fehler! (CORS/Proxy Problem)";
                 status.style.color = "#ff4444";
             }
         }
 
+        // --- GLOBAL HOTKEY LISTENER ---
         function _getCombo(e) {
             let c = [];
             if (e.ctrlKey) c.push('ctrl');
@@ -259,9 +271,8 @@
             });
         });
 
+        // Start-Aufrufe
         updateTeam();
-        setInterval(syncTable, 120000); // Alle 2 Minuten
-        syncTable();
+        setInterval(syncTable, 300000); // Alle 5 Minuten aktualisieren
+        syncTable(); // Initialer Aufruf beim Laden der Seite
     </script>
-</body>
-</html>
