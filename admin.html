@@ -2,94 +2,63 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Control Center</title>
+    <title>Floorball Steuerung</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
-        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        /* Navigation */
-        nav { width: 100%; background: #1e1e1e; display: flex; justify-content: center; border-bottom: 2px solid #333; position: sticky; top: 0; z-index: 100; }
-        nav button { background: none; border: none; color: #888; padding: 15px 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
-        nav button.active { color: #ff4444; border-bottom: 2px solid #ff4444; }
+        .header { width: 100%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { font-size: 18px; color: #ff4444; margin: 0; text-transform: uppercase; }
+        .nav-link { color: #888; text-decoration: none; font-size: 12px; border: 1px solid #444; padding: 5px 10px; border-radius: 4px; }
+        .nav-link:hover { border-color: #ff4444; color: #ff4444; }
 
-        .container { padding: 20px; width: 100%; max-width: 400px; display: none; }
-        .container.active { display: block; }
-
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        h2 { color: #ff4444; font-size: 16px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 360px; margin-bottom: 20px; }
+        h2 { color: #eee; font-size: 14px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        label { color: #888; font-size: 10px; text-transform: uppercase; display: block; margin-top: 10px; }
+        label { color: #666; font-size: 10px; text-transform: uppercase; display: block; margin-top: 10px; }
         input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; font-size: 14px; }
         .input-row { display: flex; gap: 10px; }
-        .nr-field { width: 70px; }
+        .nr-field { width: 80px; }
         
-        button.primary { width: 100%; padding: 14px; background: #ff4444; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button.secondary { background: #444; width: auto; padding: 8px 15px; font-size: 12px; }
+        button { width: 100%; padding: 14px; background: #ff4444; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 14px; }
         button:active { transform: scale(0.96); }
-
-        /* Spielerliste Management */
-        .player-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; font-size: 14px; }
-        .player-item span { color: #ff4444; font-weight: bold; margin-right: 10px; }
-        .delete-btn { color: #ff4444; cursor: pointer; font-weight: bold; padding: 5px; }
     </style>
 </head>
 <body>
 
-    <nav>
-        <button id="btn-events" class="active" onclick="showTab('events')">Events</button>
-        <button id="btn-team" onclick="showTab('team')">Team-Management</button>
-    </nav>
-
-    <!-- TAB 1: EVENTS -->
-    <div id="tab-events" class="container active">
-        <div class="card">
-            <h2>⚽ Tor</h2>
-            <div class="input-row">
-                <input type="number" class="nr-field" id="goalNr" placeholder="Nr." oninput="autoFill(this, 'goalName')">
-                <input type="text" id="goalName" placeholder="Torschütze...">
-            </div>
-            <div class="input-row">
-                <input type="number" class="nr-field" id="assistNr" placeholder="Nr." oninput="autoFill(this, 'assistName')">
-                <input type="text" id="assistName" placeholder="Assist...">
-            </div>
-            <button class="primary" onclick="sendEvent('goal')">Tor anzeigen</button>
-        </div>
-
-        <div class="card">
-            <h2>⚠️ Strafe</h2>
-            <div class="input-row">
-                <input type="number" class="nr-field" id="penaltyNr" placeholder="Nr." oninput="autoFill(this, 'penaltyName')">
-                <input type="text" id="penaltyName" placeholder="Spieler...">
-            </div>
-            <select id="penaltyDuration">
-                <option value="2'">2 Min</option>
-                <option value="2'+2'">2+2 Min</option>
-                <option value="10'">10 Min</option>
-                <option value="MS">MS</option>
-            </select>
-            <button class="primary" style="background: #555;" onclick="sendEvent('penalty')">Strafe anzeigen</button>
-        </div>
+    <div class="header">
+        <h1>Steuerung</h1>
+        <a href="management.html" class="nav-link">Team verwalten</a>
     </div>
 
-    <!-- TAB 2: TEAM MANAGEMENT -->
-    <div id="tab-team" class="container">
-        <div class="card">
-            <h2>Spieler hinzufügen</h2>
-            <div class="input-row">
-                <input type="number" class="nr-field" id="newNr" placeholder="Nr.">
-                <input type="text" id="newName" placeholder="Vollständiger Name...">
-            </div>
-            <button class="primary" onclick="addPlayer()">Spieler Speichern</button>
+    <div class="card">
+        <h2>⚽ Tor</h2>
+        <div class="input-row">
+            <input type="number" class="nr-field" id="goalNr" placeholder="Nr." oninput="findPlayer(this, 'goalName')">
+            <input type="text" id="goalName" placeholder="Torschütze...">
         </div>
+        <div class="input-row">
+            <input type="number" class="nr-field" id="assistNr" placeholder="Nr." oninput="findPlayer(this, 'assistName')">
+            <input type="text" id="assistName" placeholder="Assist...">
+        </div>
+        <button onclick="sendEvent('goal')">Tor anzeigen</button>
+    </div>
 
-        <div class="card">
-            <h2>Aktuelle Spielerliste</h2>
-            <div id="player-list-display">
-                <!-- Wird automatisch gefüllt -->
-            </div>
+    <div class="card">
+        <h2>⚠️ Strafe</h2>
+        <div class="input-row">
+            <input type="number" class="nr-field" id="penNr" placeholder="Nr." oninput="findPlayer(this, 'penName')">
+            <input type="text" id="penName" placeholder="Spieler...">
         </div>
+        <select id="penDur">
+            <option value="2'">2 Min</option>
+            <option value="2'+2'">2+2 Min</option>
+            <option value="10'">10 Min</option>
+            <option value="MS">MS</option>
+        </select>
+        <button style="background: #444;" onclick="sendEvent('penalty')">Strafe anzeigen</button>
     </div>
 
     <script>
@@ -105,64 +74,29 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let localPlayers = {};
+        let players = {};
+        db.ref('players').on('value', (snap) => { players = snap.val() || {}; });
 
-        // Tab-Wechsel
-        function showTab(tab) {
-            document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + tab).classList.add('active');
-            document.getElementById('btn-' + tab).classList.add('active');
-        }
-
-        // Datenbank-Synchronisierung: Spieler laden
-        db.ref('players').on('value', (snapshot) => {
-            localPlayers = snapshot.val() || {};
-            renderPlayerList();
-        });
-
-        function renderPlayerList() {
-            const listDiv = document.getElementById('player-list-display');
-            listDiv.innerHTML = '';
-            // Sortiert nach Nummer
-            const sortedNrs = Object.keys(localPlayers).sort((a,b) => a - b);
-            sortedNrs.forEach(nr => {
-                listDiv.innerHTML += `
-                    <div class="player-item">
-                        <div><span>#${nr}</span> ${localPlayers[nr]}</div>
-                        <div class="delete-btn" onclick="removePlayer('${nr}')">✕</div>
-                    </div>
-                `;
-            });
-        }
-
-        function autoFill(input, targetId) {
-            const nr = input.value;
-            if (localPlayers[nr]) {
-                document.getElementById(targetId).value = localPlayers[nr];
+        function findPlayer(input, targetId) {
+            if (players[input.value]) {
+                document.getElementById(targetId).value = players[input.value];
             }
         }
 
-        // SPIELER-MANAGEMENT FUNKTIONEN
-        function addPlayer() {
-            const nr = document.getElementById('newNr').value;
-            const name = document.getElementById('newName').value;
-            if (!nr || !name) return alert("Nr. und Name fehlen!");
-            db.ref('players/' + nr).set(name);
-            document.getElementById('newNr').value = '';
-            document.getElementById('newName').value = '';
-        }
-
-        function removePlayer(nr) {
-            if(confirm("Spieler #" + nr + " wirklich löschen?")) {
-                db.ref('players/' + nr).remove();
-            }
-        }
-
-        // EVENT FUNKTIONEN
         function sendEvent(type) {
             if (type === 'goal') {
-                const p = document.getElementById('goalName').value;
-                const a = document.getElementById('assistName').value;
-                if (!p) return;
-                db.ref('lastEvent').set({ type: 'goal', player: p, assist: a, timestam
+                const name = document.getElementById('goalName').value;
+                const assist = document.getElementById('assistName').value;
+                if (!name) return;
+                db.ref('lastEvent').set({ type: 'goal', player: name, assist: assist, timestamp: Date.now() });
+            } else {
+                const name = document.getElementById('penName').value;
+                const dur = document.getElementById('penDur').value;
+                if (!name) return;
+                db.ref('lastEvent').set({ type: 'penalty', player: name, duration: dur, timestamp: Date.now() });
+            }
+            document.querySelectorAll('input').forEach(i => i.value = '');
+        }
+    </script>
+</body>
+</html>
