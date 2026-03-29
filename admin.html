@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Tor Steuerung</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; justify-content: center; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; width: 100%; max-width: 300px; border: 1px solid #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: #ffd700; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>⚽ Steuerung</h2>
+        <input type="text" id="inputScorer" placeholder="Torschütze">
+        <input type="text" id="inputAssist" placeholder="Assist (optional)">
+        <button onclick="sendGoal()">TOR ANZEIGEN</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            // HIER DIE GLEICHEN DATEN WIE OBEN EINFÜGEN
+            apiKey: "...",
+            authDomain: "...",
+            databaseURL: "...",
+            projectId: "...",
+            storageBucket: "...",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function sendGoal() {
+            const scorer = document.getElementById('inputScorer').value;
+            const assist = document.getElementById('inputAssist').value;
+            if (!scorer) return alert("Name fehlt!");
+
+            // Schreibt in die Cloud-Datenbank
+            db.ref('lastGoal').set({
+                scorer: scorer,
+                assist: assist,
+                timestamp: Date.now()
+            });
+
+            document.getElementById('inputScorer').value = '';
+            document.getElementById('inputAssist').value = '';
+        }
+    </script>
+</body>
+</html>
