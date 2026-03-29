@@ -16,12 +16,11 @@
         h2 { color: #eee; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
         
         .hotkey-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; }
-        .key-display { background: #444; color: #00ff00; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 12px; min-width: 50px; text-align: center; }
+        .key-display { background: #444; color: #00ff00; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 12px; min-width: 60px; text-align: center; }
         .record-btn { background: #333; color: #aaa; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 10px; }
         .record-btn.active { background: #ff4444; color: white; border-color: white; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
-        
-        .info-text { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.4; }
+        .info-text { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.4; text-align: center; }
     </style>
 </head>
 <body>
@@ -32,16 +31,22 @@
     </div>
 
     <div class="card">
-        <h2>Tastenkürzel (Hotkeys)</h2>
-        <div id="hotkey-list">
-            <!-- Items werden per JS geladen -->
-            <div class="hotkey-item"><span>Heim +1</span><div><span class="key-display" id="key-A-plus">...</span><button class="record-btn" onclick="startRecord('A-plus')">Aufnahme</button></div></div>
-            <div class="hotkey-item"><span>Heim -1</span><div><span class="key-display" id="key-A-minus">...</span><button class="record-btn" onclick="startRecord('A-minus')">Aufnahme</button></div></div>
-            <div class="hotkey-item"><span>Gast +1</span><div><span class="key-display" id="key-B-plus">...</span><button class="record-btn" onclick="startRecord('B-plus')">Aufnahme</button></div></div>
-            <div class="hotkey-item"><span>Gast -1</span><div><span class="key-display" id="key-B-minus">...</span><button class="record-btn" onclick="startRecord('B-minus')">Aufnahme</button></div></div>
-        </div>
-        <p class="info-text">Klicke auf "Aufnahme" und drücke die gewünschte Taste oder Kombination (z.B. STRG+Q). Modifikatoren (Strg, Shift, Alt) müssen zusammen mit einer anderen Taste gedrückt werden.</p>
+        <h2>Punkte-Hotkeys</h2>
+        <div class="hotkey-item"><span>Heim +1</span><div><span class="key-display" id="key-A-plus">...</span><button class="record-btn" onclick="startRecord('A-plus')">Aufnahme</button></div></div>
+        <div class="hotkey-item"><span>Heim -1</span><div><span class="key-display" id="key-A-minus">...</span><button class="record-btn" onclick="startRecord('A-minus')">Aufnahme</button></div></div>
+        <div class="hotkey-item"><span>Gast +1</span><div><span class="key-display" id="key-B-plus">...</span><button class="record-btn" onclick="startRecord('B-plus')">Aufnahme</button></div></div>
+        <div class="hotkey-item"><span>Gast -1</span><div><span class="key-display" id="key-B-minus">...</span><button class="record-btn" onclick="startRecord('B-minus')">Aufnahme</button></div></div>
     </div>
+
+    <div class="card">
+        <h2 style="color: #ff4444;">Spezial-Hotkeys</h2>
+        <div class="hotkey-item">
+            <span>⚠️ Strafe-Fenster</span>
+            <div><span class="key-display" id="key-Penalty-Open">...</span><button class="record-btn" onclick="startRecord('Penalty-Open')">Aufnahme</button></div>
+        </div>
+    </div>
+
+    <p class="info-text">Halte Modifikatoren (Strg, Alt, Shift) und drücke eine Taste.<br>Beispiel: <b>Strg + P</b></p>
 
     <script>
         const firebaseConfig = {
@@ -56,32 +61,25 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let activeHotkeys = {};
         let recordingAction = null;
 
-        // Sync Hotkeys
         db.ref('hotkey_config').on('value', snap => {
-            activeHotkeys = snap.val() || {};
-            Object.keys(activeHotkeys).forEach(id => {
+            const hks = snap.val() || {};
+            Object.keys(hks).forEach(id => {
                 const el = document.getElementById('key-' + id);
-                if(el) el.innerText = activeHotkeys[id].display || "...";
+                if(el) el.innerText = hks[id].display || "...";
             });
         });
 
         function startRecord(action) {
             recordingAction = action;
-            document.querySelectorAll('.record-btn').forEach(b => {
-                b.classList.remove('active');
-                b.innerText = "Aufnahme";
-            });
+            document.querySelectorAll('.record-btn').forEach(b => { b.classList.remove('active'); b.innerText = "Aufnahme"; });
             event.target.classList.add('active');
-            event.target.innerText = "Tasten drücken...";
+            event.target.innerText = "Drücke Kombi...";
         }
 
         window.addEventListener('keydown', (e) => {
             if (!recordingAction) return;
-
-            // Ignorieren wenn nur Modifikatoren gedrückt werden
             if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return;
 
             e.preventDefault();
@@ -91,17 +89,12 @@
             if (e.altKey) combo.push('alt');
             combo.push(e.key.toLowerCase());
 
-            const saveObj = {
+            db.ref('hotkey_config/' + recordingAction).set({
                 id: combo.join('+'),
                 display: combo.join(' + ').toUpperCase()
-            };
-
-            db.ref('hotkey_config/' + recordingAction).set(saveObj).then(() => {
+            }).then(() => {
                 recordingAction = null;
-                document.querySelectorAll('.record-btn').forEach(b => {
-                    b.classList.remove('active');
-                    b.innerText = "Aufnahme";
-                });
+                document.querySelectorAll('.record-btn').forEach(b => { b.classList.remove('active'); b.innerText = "Aufnahme"; });
             });
         });
     </script>
