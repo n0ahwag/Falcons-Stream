@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Scoreboard Steuerung</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 500px; margin-bottom: 20px; }
+        .row { display: flex; justify-content: space-around; align-items: center; text-align: center; margin-bottom: 20px; }
+        .score-num { font-size: 48px; font-weight: bold; margin: 10px 0; }
+        button { padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 5px; border: none; }
+        .btn-add { background: #ff4444; color: white; font-size: 20px; }
+        .btn-sub { background: #444; color: white; }
+        
+        .gallery-item { display: flex; align-items: center; background: #252525; padding: 10px; margin: 5px 0; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+        .gallery-item:hover { border-color: #ff4444; }
+        .gallery-item img { width: 50px; height: 30px; object-fit: contain; margin-right: 10px; background: white; border-radius: 3px; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin: 5px 0; background: #333; color: white; border: 1px solid #444; box-sizing: border-box; }
+        .nav { margin-bottom: 20px; }
+        .nav a { color: #888; text-decoration: none; margin: 0 10px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="nav"><a href="admin.html">← Zurück zur Hauptsteuerung</a></div>
+
+    <!-- SPIELSTEUERUNG -->
+    <div class="card">
+        <div class="row">
+            <div>
+                <div id="displayA">Team A</div>
+                <div class="score-num" id="sA">0</div>
+                <button class="btn-add" onclick="changeScore('scoreA', 1)">+1</button>
+                <button class="btn-sub" onclick="changeScore('scoreA', -1)">-1</button>
+            </div>
+            <div style="font-size: 24px;">VS</div>
+            <div>
+                <div id="displayB">Team B</div>
+                <div class="score-num" id="sB">0</div>
+                <button class="btn-add" onclick="changeScore('scoreB', 1)">+1</button>
+                <button class="btn-sub" onclick="changeScore('scoreB', -1)">-1</button>
+            </div>
+        </div>
+        <button style="width:100%; background: #444; color: white;" onclick="resetScores()">Reset Scoreboard</button>
+    </div>
+
+    <!-- GALERIE & UPLOAD -->
+    <div class="card">
+        <h3>Design / Team Galerie</h3>
+        <div id="gallery">Lade Galerie...</div>
+        
+        <hr style="border: 0; border-top: 1px solid #333; margin: 20px 0;">
+        
+        <h4>Neues Team-Set hinzufügen</h4>
+        <input type="text" id="newName" placeholder="Name (z.B. FRA)">
+        <label style="font-size: 10px; color: #888;">Logo hochladen:</label>
+        <input type="file" id="newLogo" accept="image/*">
+        <button class="btn-add" style="width: 100%;" onclick="uploadTemplate()">In Galerie speichern</button>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
+            authDomain: "obs-overlay-2950c.firebaseapp.com",
+            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "obs-overlay-2950c",
+            storageBucket: "obs-overlay-2950c.firebasestorage.app",
+            messagingSenderId: "1094353952185",
+            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 1. Spielstand steuern
+        let currentScores = { scoreA: 0, scoreB: 0 };
+        db.ref('scoreboard').on('value', snap => {
+            const data = snap.val() || {};
+            currentScores = { scoreA: data.scoreA || 0, scoreB: data.scoreB || 0 };
+            document.getElementById('sA').innerText = currentScores.scoreA;
+            document.getElementById('sB').innerText = currentScores.scoreB;
+            document.getElementById('displayA').innerText = data.teamA || "Home";
+            document.getElementById('displayB').innerText = data.teamB || "Away";
+        });
+
+        function changeScore(team, val) {
+            let newVal = currentScores[team] + val;
+            if(newVal < 0) newVal = 0;
+            db.ref('scoreboard/' + team).set(newVal);
+        }
+
+        function resetScores() {
+            if(confirm("Score wirklich auf 0 setzen?")) {
+                db.ref('scoreboard/scoreA').set(0);
+                db.ref('scoreboard/scoreB').set(0);
+            }
+        }
+
+        // 2. Galerie Management
+        db.ref('scoreboard_templates').on('value', snap => {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            const data = snap.val() || {};
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.innerHTML = `<img src="${item.logo}"> <span>${item.name}</span>`;
+                div.onclick = () => selectTemplate(item);
+                gallery.appendChild(div);
+            });
+        });
+
+        function selectTemplate(item) {
+            const side = confirm(`Als Team A (Home) setzen? \n(Abbrechen für Team B / Away)`) ? 'A' : 'B';
+            db.ref('scoreboard/team' + side).set(item.name);
+            db.ref('scoreboard/logo' + side).set(item.logo);
+        }
+
+        // 3. Datei-Upload (Base64 Konvertierung)
+        function uploadTemplate() {
+            const name = document.getElementById('newName').value;
+            const file = document.getElementById('newLogo').files[0];
+            if(!name || !file) return alert("Bitte Name und Logo wählen!");
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                db.ref('scoreboard_templates').push({ name: name, logo: base64Image });
+                alert("Erfolgreich gespeichert!");
+                document.getElementById('newName').value = "";
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>

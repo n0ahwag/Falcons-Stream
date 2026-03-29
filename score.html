@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Floorball Scoreboard</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&display=swap');
+        body { margin: 0; padding: 0; background: transparent; font-family: 'Poppins', sans-serif; color: white; overflow: hidden; }
+
+        /* Position oben links mit Abstand */
+        #scoreboard {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            display: flex;
+            flex-direction: column;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
+        }
+
+        .team-row {
+            display: flex;
+            align-items: center;
+            height: 60px;
+            width: 350px;
+            margin-bottom: 2px;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+
+        /* Team Farben & Layout */
+        .home { background: linear-gradient(90deg, #b30000 0%, #ff4444 100%); border-bottom: 2px solid rgba(0,0,0,0.2); }
+        .away { background: linear-gradient(90deg, #006b3c 0%, #00a859 100%); }
+
+        .logo-box {
+            width: 70px; height: 60px;
+            background: white;
+            display: flex; justify-content: center; align-items: center;
+            padding: 5px; box-sizing: border-box;
+        }
+        .logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .team-name {
+            flex-grow: 1;
+            padding-left: 15px;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 900;
+        }
+
+        .score-box {
+            width: 70px; height: 60px;
+            background: rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 32px; font-weight: 900;
+            border-left: 2px solid rgba(255,255,255,0.1);
+        }
+
+        #timer-box {
+            background: rgba(10, 10, 10, 0.9);
+            width: 100px; padding: 5px;
+            text-align: center; font-size: 18px;
+            border-radius: 0 0 5px 5px; align-self: flex-start;
+            margin-left: 70px; border-top: 1px solid #444;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="scoreboard">
+        <div class="team-row home">
+            <div class="logo-box"><img id="logoA" src=""></div>
+            <div class="team-name" id="nameA">FRA</div>
+            <div class="score-box" id="scoreA">0</div>
+        </div>
+        <div class="team-row away">
+            <div class="logo-box"><img id="logoB" src=""></div>
+            <div class="team-name" id="nameB">TVE</div>
+            <div class="score-box" id="scoreB">0</div>
+        </div>
+        <div id="timer-box">20:00</div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
+            authDomain: "obs-overlay-2950c.firebaseapp.com",
+            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "obs-overlay-2950c",
+            storageBucket: "obs-overlay-2950c.firebasestorage.app",
+            messagingSenderId: "1094353952185",
+            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        db.ref('scoreboard').on('value', (snap) => {
+            const data = snap.val() || {};
+            document.getElementById('nameA').innerText = data.teamA || "HOME";
+            document.getElementById('nameB').innerText = data.teamB || "AWAY";
+            document.getElementById('scoreA').innerText = data.scoreA || 0;
+            document.getElementById('scoreB').innerText = data.scoreB || 0;
+            document.getElementById('logoA').src = data.logoA || "";
+            document.getElementById('logoB').src = data.logoB || "";
+        });
+    </script>
+</body>
+</html>
