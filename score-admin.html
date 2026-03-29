@@ -2,49 +2,52 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Scoreboard Design Management</title>
+    <title>Scoreboard Admin & Hotkeys</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
-        /* Navigation */
         .nav-header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; margin-bottom: 20px; }
         .back-btn { color: #888; text-decoration: none; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; font-size: 13px; }
-        .back-btn:hover { color: #ff4444; border-color: #ff4444; }
 
-        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 500px; margin-bottom: 20px; }
-        
+        .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 500px; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+        h2 { color: #ff4444; font-size: 14px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
+
         .score-ctrl { display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px; }
-        .score-display { font-size: 50px; font-weight: bold; color: #ff4444; min-width: 60px; text-align: center; }
+        .score-display { font-size: 60px; font-weight: 700; color: #ff4444; min-width: 80px; text-align: center; }
         
         button { padding: 12px; cursor: pointer; border-radius: 6px; border: none; font-weight: bold; transition: 0.2s; }
         .btn-plus { background: #ff4444; color: white; width: 60px; font-size: 20px; }
         .btn-minus { background: #444; color: white; width: 40px; margin-top: 5px; }
 
+        /* Hotkey Sektion */
+        .hotkey-list { font-size: 12px; color: #aaa; margin-top: 10px; }
+        .hotkey-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 8px; margin: 4px 0; border-radius: 5px; }
+        .key-badge { background: #ff4444; color: white; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-weight: bold; min-width: 20px; text-align: center; }
+        .btn-record { font-size: 10px; background: #333; color: #888; padding: 4px 8px; margin-left: 10px; }
+        .btn-record.active { background: #ff4444; color: white; animation: pulse 1s infinite; }
+
         /* Galerie */
-        .gallery-item { 
-            display: flex; align-items: center; background: #252525; 
-            padding: 10px; margin: 10px 0; border-radius: 8px; 
-            border: 2px solid transparent; position: relative;
-        }
-        .gallery-item img { width: 120px; height: 40px; object-fit: contain; margin-right: 15px; background: #000; cursor: pointer; }
-        .gallery-item .info { flex-grow: 1; cursor: pointer; }
-        
-        .delete-btn { background: none; color: #ff4444; font-size: 20px; margin-left: 10px; padding: 5px 10px; }
-        .delete-btn:hover { background: rgba(255,68,68,0.1); border-radius: 50%; }
+        .gallery-item { display: flex; align-items: center; background: #252525; padding: 10px; margin: 10px 0; border-radius: 8px; border: 2px solid transparent; }
+        .gallery-item img { width: 100px; height: 35px; object-fit: contain; margin-right: 15px; background: #000; cursor: pointer; }
+        .delete-btn { background: none; color: #ff4444; font-size: 18px; cursor: pointer; }
 
         input, .save-btn { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; }
         .save-btn { background: #28a745; cursor: pointer; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <div class="nav-header">
-        <a href="admin.html" class="back-btn">← Zurück zum Hauptmenü</a>
-        <span style="color:#ff4444; font-weight:bold; text-transform:uppercase; letter-spacing:1px;">Scoreboard Admin</span>
+        <a href="admin.html" class="back-btn">← Zurück</a>
+        <span style="color:#ff4444; font-weight:bold; text-transform:uppercase;">Scoreboard Control</span>
     </div>
 
+    <!-- LIVE SCORE -->
     <div class="card">
         <h2>Live Spielstand</h2>
         <div class="score-ctrl">
@@ -60,16 +63,37 @@
                 <button class="btn-minus" onclick="changeScore('scoreB', -1)">-</button>
             </div>
         </div>
-        <button style="width:100%; background:#333; color:#888; font-size:11px;" onclick="resetScore()">KOMPLETT RESET (0:0)</button>
     </div>
 
+    <!-- HOTKEYS -->
+    <div class="card">
+        <h2>Tastenkürzel (Hotkeys)</h2>
+        <div class="hotkey-list">
+            <div class="hotkey-item">
+                <span>Team A +1</span>
+                <div><span class="key-badge" id="key-A-plus">Q</span><button class="btn-record" onclick="recordKey('A-plus')">Ändern</button></div>
+            </div>
+            <div class="hotkey-item">
+                <span>Team A -1</span>
+                <div><span class="key-badge" id="key-A-minus">A</span><button class="btn-record" onclick="recordKey('A-minus')">Ändern</button></div>
+            </div>
+            <div class="hotkey-item">
+                <span>Team B +1</span>
+                <div><span class="key-badge" id="key-B-plus">W</span><button class="btn-record" onclick="recordKey('B-plus')">Ändern</button></div>
+            </div>
+            <div class="hotkey-item">
+                <span>Team B -1</span>
+                <div><span class="key-badge" id="key-B-minus">S</span><button class="btn-record" onclick="recordKey('B-minus')">Ändern</button></div>
+            </div>
+        </div>
+        <p style="font-size: 10px; color: #555; margin-top: 10px;">Hinweis: Hotkeys funktionieren nur, wenn dieses Browser-Tab ausgewählt ist.</p>
+    </div>
+
+    <!-- GALERIE -->
     <div class="card">
         <h2>Design Galerie</h2>
         <div id="gallery">Lade Bilder...</div>
-        
-        <hr style="border:0; border-top:1px solid #333; margin:25px 0;">
-        
-        <h3>Neues Scoreboard-Bild hochladen</h3>
+        <hr style="border:0; border-top:1px solid #333; margin:20px 0;">
         <input type="text" id="imgName" placeholder="Name des Designs">
         <input type="file" id="imgFile" accept="image/*">
         <button class="save-btn" onclick="uploadDesign()">In Galerie speichern</button>
@@ -89,6 +113,22 @@
         const db = firebase.database();
 
         let scores = { scoreA: 0, scoreB: 0 };
+        let hotkeys = {
+            'A-plus': 'q',
+            'A-minus': 'a',
+            'B-plus': 'w',
+            'B-minus': 's'
+        };
+        let recordingAction = null;
+
+        // Hotkeys aus dem Speicher laden (falls vorhanden)
+        const savedKeys = localStorage.getItem('fb_hotkeys');
+        if(savedKeys) {
+            hotkeys = JSON.parse(savedKeys);
+            Object.keys(hotkeys).forEach(id => {
+                document.getElementById('key-' + id).innerText = hotkeys[id].toUpperCase();
+            });
+        }
 
         db.ref('scoreboard_active').on('value', snap => {
             const data = snap.val() || {};
@@ -103,14 +143,42 @@
             db.ref('scoreboard_active/' + team).set(n);
         }
 
-        function resetScore() { 
-            if(confirm("Score wirklich zurücksetzen?")) {
-                db.ref('scoreboard_active/scoreA').set(0); 
-                db.ref('scoreboard_active/scoreB').set(0); 
+        // Hotkey Logik
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT') return; // Ignorieren wenn man tippt
+
+            if (recordingAction) {
+                e.preventDefault();
+                hotkeys[recordingAction] = e.key.toLowerCase();
+                document.getElementById('key-' + recordingAction).innerText = e.key.toUpperCase();
+                localStorage.setItem('fb_hotkeys', JSON.stringify(hotkeys));
+                stopRecording();
+                return;
             }
+
+            const key = e.key.toLowerCase();
+            if (key === hotkeys['A-plus']) changeScore('scoreA', 1);
+            if (key === hotkeys['A-minus']) changeScore('scoreA', -1);
+            if (key === hotkeys['B-plus']) changeScore('scoreB', 1);
+            if (key === hotkeys['B-minus']) changeScore('scoreB', -1);
+        });
+
+        function recordKey(action) {
+            recordingAction = action;
+            document.querySelectorAll('.btn-record').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            event.target.innerText = "Drücke Taste...";
         }
 
-        // Galerie mit Lösch-Funktion
+        function stopRecording() {
+            recordingAction = null;
+            document.querySelectorAll('.btn-record').forEach(b => {
+                b.classList.remove('active');
+                b.innerText = "Ändern";
+            });
+        }
+
+        // Galerie & Upload
         db.ref('score_designs').on('value', snap => {
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = '';
@@ -119,11 +187,7 @@
                 const design = data[id];
                 const div = document.createElement('div');
                 div.className = 'gallery-item';
-                div.innerHTML = `
-                    <img src="${design.img}" onclick="setActive('${id}')"> 
-                    <div class="info" onclick="setActive('${id}')">${design.name}</div>
-                    <button class="delete-btn" onclick="deleteDesign('${id}')">✕</button>
-                `;
+                div.innerHTML = `<img src="${design.img}" onclick="setActive('${id}')"><span style="flex-grow:1; cursor:pointer;" onclick="setActive('${id}')">${design.name}</span><button class="delete-btn" onclick="deleteDesign('${id}')">✕</button>`;
                 gallery.appendChild(div);
             });
         });
@@ -135,20 +199,16 @@
         }
 
         function deleteDesign(id) {
-            if(confirm("Dieses Scoreboard-Design wirklich dauerhaft löschen?")) {
-                db.ref('score_designs/' + id).remove();
-            }
+            if(confirm("Löschen?")) db.ref('score_designs/' + id).remove();
         }
 
         function uploadDesign() {
             const name = document.getElementById('imgName').value;
             const file = document.getElementById('imgFile').files[0];
             if(!name || !file) return alert("Name und Datei wählen!");
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 db.ref('score_designs').push({ name: name, img: e.target.result });
-                alert("Gespeichert!");
                 document.getElementById('imgName').value = '';
                 document.getElementById('imgFile').value = '';
             };
