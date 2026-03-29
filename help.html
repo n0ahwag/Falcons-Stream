@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Hilfe - Floorball Magic</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: #121212; color: white; padding: 20px; line-height: 1.6; display: flex; flex-direction: column; align-items: center; }
+        .card { background: #1e1e1e; padding: 25px; border-radius: 15px; border: 1px solid #333; width: 100%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #ff4444; text-transform: uppercase; font-size: 24px; text-align: center; }
+        h2 { color: #ff4444; font-size: 18px; margin-top: 30px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        p { color: #ccc; font-size: 14px; }
+        .step { background: #252525; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ff4444; }
+        .step b { color: #fff; display: block; margin-bottom: 5px; }
+        .link-list { list-style: none; padding: 0; }
+        .link-list li { background: #333; margin: 5px 0; padding: 10px; border-radius: 5px; font-size: 13px; }
+        .link-list b { color: #ff4444; }
+        .back-btn { display: inline-block; margin-top: 20px; color: #888; text-decoration: none; border: 1px solid #444; padding: 10px 20px; border-radius: 8px; }
+        .back-btn:hover { color: #ff4444; border-color: #ff4444; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Wie funktioniert die Zauberei? 🪄</h1>
+        
+        <p>Stell dir vor, dein Computer-Bildschirm ist ein Fernseher. Wir haben kleine "digitale Sticker", die wir auf den Fernseher kleben können. Mit deinem Handy kannst du bestimmen, wann diese Sticker erscheinen!</p>
+
+        <h2>1. Die Sticker (Für OBS)</h2>
+        <p>Diese Seiten musst du in dein Streaming-Programm (OBS) einbauen. Sie sind unsichtbar, bis du einen Knopf drückst.</p>
+        <ul class="link-list">
+            <li><b>index.html:</b> Zeigt Tore und Strafen an.</li>
+            <li><b>lineup.html:</b> Zeigt die ganze Mannschaft auf dem Feld.</li>
+        </ul>
+
+        <h2>2. Die Fernbedienung (Für dich)</h2>
+        <p>Diese Seiten öffnest du auf deinem Handy oder Laptop, um das Spiel zu steuern.</p>
+        <ul class="link-list">
+            <li><b>admin.html:</b> Die Haupt-Fernbedienung für Tore und Strafen.</li>
+            <li><b>management.html:</b> Hier schreibst du alle Namen deiner Freunde (Spieler) auf.</li>
+            <li><b>lineup-admin.html:</b> Hier puzzelst du zusammen, wer in welcher Reihe spielt.</li>
+        </ul>
+
+        <h2>3. So startest du (Schritt für Schritt)</h2>
+        
+        <div class="step">
+            <b>Schritt 1: Das Team füllen</b>
+            Gehe zum 👥 <b>Team-Management</b>. Schreib alle Namen mit ihren Nummern auf. Das System merkt sich das für immer.
+        </div>
+
+        <div class="step">
+            <b>Schritt 2: Die Aufstellung bauen</b>
+            Gehe zur 📋 <b>Aufstellung</b>. Tippe die Nummern ein. Die Namen erscheinen wie von Zauberhand. Klick auf "Speichern".
+        </div>
+
+        <div class="step">
+            <b>Schritt 3: Das Spiel steuern</b>
+            Wenn ein Tor fällt: Geh zur 🏠 <b>Steuerung</b>. Tipp die Nummer ein und drück den roten Knopf. Plopp! Der Name erscheint im Stream!
+        </div>
+
+        <div class="step">
+            <b>Schritt 4: Automatische Aufstellung</b>
+            In der Aufstellung gibt es einen magischen Knopf (Auto-Durchlauf). Er zeigt nacheinander alle Reihen für 7 Sekunden. Perfekt für den Start!
+        </div>
+
+        <center><a href="admin.html" class="back-btn">Alles klar, zurück zur Steuerung!</a></center>
+    </div>
+
+</body>
+</html>
