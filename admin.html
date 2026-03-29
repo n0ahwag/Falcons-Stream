@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Tor Steuerung</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #121212;
+            color: white;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        .card {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+        h2 { 
+            text-align: center; 
+            color: #ffd700; 
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+        label {
+            display: block;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #252525;
+            color: white;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ffd700;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #ffd700;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        button:active {
+            transform: scale(0.98);
+            background: #e6c200;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>⚽ Tor Steuerung</h2>
+        
+        <label>Torschütze</label>
+        <input type="text" id="inputScorer" placeholder="z.B. Müller" autocomplete="off">
+        
+        <label>Assist (Optional)</label>
+        <input type="text" id="inputAssist" placeholder="z.B. Musiala" autocomplete="off">
+        
+        <button onclick="sendGoal()">TOR ANZEIGEN</button>
+    </div>
+
+    <script>
+        function sendGoal() {
+            const scorerInput = document.getElementById('inputScorer');
+            const assistInput = document.getElementById('inputAssist');
+
+            if (scorerInput.value.trim() === "") {
+                alert("Bitte Torschützen eingeben!");
+                return;
+            }
+
+            const goalData = {
+                scorer: scorerInput.value,
+                assist: assistInput.value,
+                time: Date.now() 
+            };
+
+            // Speichert die Daten lokal im "Browser-Speicher" von OBS
+            localStorage.setItem('lastGoal', JSON.stringify(goalData));
+
+            // Felder leeren
+            scorerInput.value = '';
+            assistInput.value = '';
+            scorerInput.focus();
+        }
+    </script>
+</body>
+</html>
