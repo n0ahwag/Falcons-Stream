@@ -2,27 +2,27 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Tor Steuerung</title>
+    <title>Floorball Admin Slim</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; padding: 20px; }
-        .card { background: #1e1e1e; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; border: 1px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-        h2 { color: #ffd700; text-align: center; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 14px; background: #ffd700; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
-        button:active { transform: scale(0.98); background: #e6c200; }
-        #status { text-align: center; margin-top: 15px; color: #00ff00; font-size: 14px; display: none; }
+        body { font-family: sans-serif; background: #121212; color: white; display: flex; justify-content: center; padding: 10px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; width: 100%; max-width: 300px; border: 1px solid #333; }
+        h2 { color: #ff4444; text-align: center; margin-bottom: 15px; font-size: 18px; text-transform: uppercase; }
+        label { color: #888; font-size: 11px; text-transform: uppercase; }
+        input { width: 100%; padding: 10px; margin: 5px 0 15px 0; border-radius: 4px; border: 1px solid #444; background: #252525; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #ff4444; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
+        button:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
-
     <div class="card">
-        <h2> Tor Steuerung</h2>
-        <input type="text" id="scorer" placeholder="Torschütze" autocomplete="off">
-        <input type="text" id="assist" placeholder="Assist (optional)" autocomplete="off">
+        <h2>Floorball Admin</h2>
+        <label>Torschütze</label>
+        <input type="text" id="scorer" placeholder="..." autocomplete="off">
+        <label>Assist</label>
+        <input type="text" id="assist" placeholder="..." autocomplete="off">
         <button onclick="sendGoal()">TOR ANZEIGEN</button>
-        <div id="status">Gesendet! ✅</div>
     </div>
 
     <script>
@@ -35,27 +35,16 @@
             messagingSenderId: "1094353952185",
             appId: "1:1094353952185:web:da70794c9e5104fda22a68"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-
         function sendGoal() {
             const sc = document.getElementById('scorer').value;
             const as = document.getElementById('assist').value;
-            const status = document.getElementById('status');
-
-            if (!sc) return alert("Bitte Torschützen eingeben!");
-
-            db.ref('lastGoal').set({
-                scorer: sc,
-                assist: as,
-                timestamp: Date.now()
-            }).then(() => {
-                status.style.display = "block";
-                setTimeout(() => status.style.display = "none", 2000);
+            if (!sc) return;
+            db.ref('lastGoal').set({ scorer: sc, assist: as, timestamp: Date.now() }).then(() => {
                 document.getElementById('scorer').value = '';
                 document.getElementById('assist').value = '';
-            }).catch(err => alert("Fehler: " + err.message));
+            });
         }
     </script>
 </body>
