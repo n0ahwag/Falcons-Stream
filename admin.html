@@ -93,31 +93,42 @@
             document.querySelectorAll('input').forEach(i => i.value = '');
         }
 
-        // UNIVERSAL HOTKEY EXECUTION
-        window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return;
+        // --- Suche im <script> Teil der admin.html den Hotkey-Bereich und ersetze ihn hierdurch: ---
 
-            let c = [];
-            if (e.ctrlKey) c.push('ctrl');
-            if (e.shiftKey) c.push('shift');
-            if (e.altKey) c.push('alt');
-            c.push(e.key.toLowerCase());
-            const pressed = c.join('+');
-
-            Object.keys(hks).forEach(act => {
-                if (hks[act].id === pressed) {
-                    e.preventDefault();
-                    if (act === 'Penalty-Open') {
-                        window.open('penalty-entry.html?team=' + currentT, 'strafePopup', 'width=400,height=550');
-                    } else {
-                        let team = act.includes('A') ? 'scoreA' : 'scoreB';
-                        let mod = act.includes('plus') ? 1 : -1;
-                        db.ref('scoreboard_active/' + team).set(Math.max(0, (curS[team] || 0) + mod));
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return;
+            
+                let c = [];
+                if (e.ctrlKey) c.push('ctrl');
+                if (e.shiftKey) c.push('shift');
+                if (e.altKey) c.push('alt');
+                c.push(e.key.toLowerCase());
+                const pressed = c.join('+');
+            
+                Object.keys(hks).forEach(act => {
+                    if (hks[act].id === pressed) {
+                        e.preventDefault();
+            
+                        // Check if it's a Penalty Hotkey
+                        if (act.startsWith('Pen-')) {
+                            let duration = "";
+                            if(act === 'Pen-2') duration = "2'";
+                            if(act === 'Pen-2-2') duration = "2'+2'";
+                            if(act === 'Pen-10') duration = "10'";
+                            if(act === 'Pen-MS') duration = "MS";
+            
+                            window.open(`penalty-entry.html?team=${currentT}&dur=${encodeURIComponent(duration)}`, 
+                                        'strafePopup', 'width=400,height=550');
+                        } else {
+                            // Normal Score Hotkeys
+                            let team = act.includes('A') ? 'scoreA' : 'scoreB';
+                            let mod = act.includes('plus') ? 1 : -1;
+                            db.ref('scoreboard_active/' + team).set(Math.max(0, (curS[team] || 0) + mod));
+                        }
                     }
-                }
+                });
             });
-        });
 
         updateTeam();
     </script>
