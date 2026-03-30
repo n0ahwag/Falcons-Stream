@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Einstellungen - Floorball Control</title>
+    <title>Einstellungen - Hotkeys</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
@@ -12,26 +12,23 @@
         .header { width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .back-btn { color: #888; text-decoration: none; border: 1px solid #444; padding: 8px 15px; border-radius: 6px; font-size: 13px; }
         .card { background: #1e1e1e; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 450px; margin-bottom: 20px; }
-        h1 { color: #ff4444; font-size: 20px; text-transform: uppercase; margin: 0; }
         h2 { color: #eee; font-size: 14px; text-transform: uppercase; border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
-        
-        .hotkey-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; }
-        .key-display { background: #444; color: #00ff00; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-weight: bold; font-size: 12px; min-width: 60px; text-align: center; }
-        .record-btn { background: #333; color: #aaa; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-left: 10px; }
-        .record-btn.active { background: #ff4444; color: white; border-color: white; animation: blink 1s infinite; }
+        .hotkey-item { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 10px; margin: 6px 0; border-radius: 8px; }
+        .key-display { background: #444; color: #00ff00; padding: 4px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; min-width: 60px; text-align: center; }
+        .record-btn { background: #333; color: #aaa; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; margin-left: 10px; }
+        .record-btn.active { background: #ff4444; color: white; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
-        .info-text { font-size: 11px; color: #666; margin-top: 10px; line-height: 1.4; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>⚙️ Setup</h1>
+        <h1>⚙️ Hotkeys</h1>
         <a href="admin.html" class="back-btn">← Zurück</a>
     </div>
 
     <div class="card">
-        <h2>Punkte-Hotkeys</h2>
+        <h2>Punkte</h2>
         <div class="hotkey-item"><span>Heim +1</span><div><span class="key-display" id="key-A-plus">...</span><button class="record-btn" onclick="startRecord('A-plus')">Aufnahme</button></div></div>
         <div class="hotkey-item"><span>Heim -1</span><div><span class="key-display" id="key-A-minus">...</span><button class="record-btn" onclick="startRecord('A-minus')">Aufnahme</button></div></div>
         <div class="hotkey-item"><span>Gast +1</span><div><span class="key-display" id="key-B-plus">...</span><button class="record-btn" onclick="startRecord('B-plus')">Aufnahme</button></div></div>
@@ -39,14 +36,12 @@
     </div>
 
     <div class="card">
-        <h2 style="color: #ff4444;">Spezial-Hotkeys</h2>
-        <div class="hotkey-item">
-            <span>⚠️ Strafe-Fenster</span>
-            <div><span class="key-display" id="key-Penalty-Open">...</span><button class="record-btn" onclick="startRecord('Penalty-Open')">Aufnahme</button></div>
-        </div>
+        <h2 style="color: #ff4444;">Strafen (Fenster öffnen)</h2>
+        <div class="hotkey-item"><span>⚠️ Strafe 2 Min</span><div><span class="key-display" id="key-Pen-2">...</span><button class="record-btn" onclick="startRecord('Pen-2')">Aufnahme</button></div></div>
+        <div class="hotkey-item"><span>⚠️ Strafe 2+2 Min</span><div><span class="key-display" id="key-Pen-2-2">...</span><button class="record-btn" onclick="startRecord('Pen-2-2')">Aufnahme</button></div></div>
+        <div class="hotkey-item"><span>⚠️ Strafe 10 Min</span><div><span class="key-display" id="key-Pen-10">...</span><button class="record-btn" onclick="startRecord('Pen-10')">Aufnahme</button></div></div>
+        <div class="hotkey-item"><span>⚠️ Matchstrafe (MS)</span><div><span class="key-display" id="key-Pen-MS">...</span><button class="record-btn" onclick="startRecord('Pen-MS')">Aufnahme</button></div></div>
     </div>
-
-    <p class="info-text">Halte Modifikatoren (Strg, Alt, Shift) und drücke eine Taste.<br>Beispiel: <b>Strg + P</b></p>
 
     <script>
         const firebaseConfig = {
@@ -75,7 +70,7 @@
             recordingAction = action;
             document.querySelectorAll('.record-btn').forEach(b => { b.classList.remove('active'); b.innerText = "Aufnahme"; });
             event.target.classList.add('active');
-            event.target.innerText = "Drücke Kombi...";
+            event.target.innerText = "Kombi...";
         }
 
         window.addEventListener('keydown', (e) => {
