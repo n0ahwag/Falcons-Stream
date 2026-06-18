@@ -2,76 +2,116 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Overlay Slim</title>
+    <title>Floorball Pro Broadcast Overlay</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         
-        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Poppins', sans-serif; background: transparent; }
-
-        /* Erhöhte Opacity (0.98) für eine fast solide Box */
-        #event-container {
-            position: absolute;
-            bottom: 12%; 
-            left: 50%;
-            transform: translateX(-50%) translateY(30px);
-            width: 380px;
-            background: rgba(5, 5, 5, 0.98); /* Fast komplett schwarz/deckend */
-            backdrop-filter: blur(10px);
-            color: white;
-            padding: 15px 25px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-            border-radius: 8px;
-            overflow: hidden;
+        body { 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: 'Inter', sans-serif; 
+            background: transparent; 
         }
 
+        /* Der Anchor hält die Perspektive für die 3D-Animation */
+        #event-anchor {
+            position: absolute;
+            bottom: 8%; 
+            left: 50%;
+            transform: translateX(-50%);
+            perspective: 1200px;
+        }
+
+        /* Die Hauptkarte */
+        #event-container {
+            width: 550px;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            color: white;
+            padding: 25px 35px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            position: relative;
+            
+            /* Start-Zustand für die Animation */
+            opacity: 0;
+            visibility: hidden;
+            transform: rotateX(-95deg) translateY(80px) scale(0.8);
+            transition: all 1s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+        }
+
+        /* Aktiv-Zustand (Einfahren) */
         #event-container.active {
             opacity: 1;
             visibility: visible;
-            transform: translateX(-50%) translateY(0);
+            transform: rotateX(0deg) translateY(0) scale(1);
+        }
+
+        /* Linker Bereich (Icon/Typ) */
+        .event-type-box {
+            font-size: 38px;
+            font-weight: 900;
+            padding-right: 30px;
+            margin-right: 30px;
+            border-right: 2px solid rgba(255,255,255,0.15);
+            min-width: 60px;
+            text-align: center;
+            text-shadow: 0 0 15px rgba(255,0,0,0.4);
+        }
+
+        /* Rechter Bereich (Texte) */
+        .event-main {
+            flex-grow: 1;
         }
 
         .event-label {
-            font-size: 11px;
+            font-size: 12px;
             text-transform: uppercase;
             font-weight: 700;
-            letter-spacing: 4px;
-            margin-bottom: 4px;
+            letter-spacing: 6px;
+            color: #888;
+            margin-bottom: 5px;
         }
 
         .player-name {
-            font-size: 24px;
-            font-weight: 500;
-            line-height: 1.2;
+            font-size: 32px;
+            font-weight: 900;
             text-transform: uppercase;
+            line-height: 1;
+            letter-spacing: -1.5px;
+            margin-bottom: 4px;
         }
 
         .detail-text {
-            font-size: 15px;
-            color: #bbb;
-            font-weight: 300;
+            font-size: 17px;
+            color: rgba(255,255,255,0.5);
             font-style: italic;
+            font-weight: 400;
         }
 
-        /* Dünner roter Fortschrittsbalken */
-        .progress-bar {
+        /* Fortschrittsbalken am unteren Rand */
+        .progress-bar-container {
             position: absolute;
             bottom: 0;
             left: 0;
-            height: 4px;
-            background: #ff4444;
-            width: 0%;
+            width: 100%;
+            height: 5px;
+            background: rgba(255,255,255,0.05);
         }
 
-        .active .progress-bar {
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ff4444;
+        }
+
+        .active .progress-fill {
             animation: timer 5s linear forwards;
         }
 
@@ -79,15 +119,35 @@
             from { width: 100%; }
             to { width: 0%; }
         }
+
+        /* Glanzeffekt, der einmal drüberfährt */
+        #event-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+        }
+        #event-container.active::after {
+            left: 150%;
+            transition: 1.5s 0.6s;
+        }
     </style>
 </head>
 <body>
 
-    <div id="event-container">
-        <div id="label" class="event-label">-</div>
-        <div id="player" class="player-name">-</div>
-        <div id="detail" class="detail-text">-</div>
-        <div class="progress-bar"></div>
+    <div id="event-anchor">
+        <div id="event-container">
+            <div id="type-icon" class="event-type-box">⚽</div>
+            <div class="event-main">
+                <div id="label" class="event-label">Ereignis</div>
+                <div id="player" class="player-name">-</div>
+                <div id="detail" class="detail-text">-</div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" id="fill"></div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -115,21 +175,39 @@
             const data = snapshot.val();
             if (data) {
                 const labelEl = document.getElementById('label');
+                const iconEl = document.getElementById('type-icon');
+                const fillEl = document.getElementById('fill');
                 
                 if (data.type === 'goal') {
                     labelEl.innerText = "Tor erzielt";
-                    labelEl.style.color = "#ff4444"; // Tor bleibt Rot
+                    labelEl.style.color = "#ff4444"; 
+                    iconEl.innerText = "GOAL";
+                    iconEl.style.fontSize = "18px"; // Wort statt Icon für Pro-Look
+                    iconEl.style.color = "#ff4444";
+                    fillEl.style.background = "#ff4444";
+                    
                     document.getElementById('player').innerText = data.player;
-                    document.getElementById('detail').innerText = data.assist ? `Assist: ${data.assist}` : "";
+                    document.getElementById('detail').innerText = data.assist ? `Assist: ${data.assist}` : "Einzelleistung";
                 } else {
                     labelEl.innerText = "Zeitstrafe";
-                    labelEl.style.color = "#ffffff"; // Strafe ist jetzt Weiß
+                    labelEl.style.color = "#ffffff"; 
+                    iconEl.innerText = data.duration || "2'";
+                    iconEl.style.fontSize = "38px";
+                    iconEl.style.color = "#ffffff";
+                    fillEl.style.background = "#ffffff";
+
                     document.getElementById('player').innerText = data.player;
-                    document.getElementById('detail').innerText = `Dauer: ${data.duration}`;
+                    document.getElementById('detail').innerText = "Unsportliches Verhalten / Stoßen"; // Beispiel, falls kein Grund mitkommt
                 }
 
+                // Animation triggern
+                container.classList.remove('active');
+                void container.offsetWidth; // Reflow triggern für Neustart der Animation
                 container.classList.add('active');
-                setTimeout(() => { container.classList.remove('active'); }, 5000);
+
+                setTimeout(() => {
+                    container.classList.remove('active');
+                }, 5000);
             }
         });
     </script>
