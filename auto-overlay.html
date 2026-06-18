@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Floorball Pro-Broadcast Overlay</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: transparent; }
+
+        /* Animation Container */
+        #event-anchor {
+            position: absolute;
+            bottom: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            perspective: 1000px;
+        }
+
+        #main-card {
+            width: 500px;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(20px);
+            border-top: 4px solid #ff0000;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 4px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            
+            /* Animation State: Hidden */
+            opacity: 0;
+            transform: rotateX(-30deg) translateY(50px) scale(0.9);
+            transition: all 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+            visibility: hidden;
+        }
+
+        #main-card.show {
+            opacity: 1;
+            transform: rotateX(0deg) translateY(0) scale(1);
+            visibility: visible;
+        }
+
+        /* Glanz Effekt */
+        #main-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: 0.5s;
+        }
+        #main-card.show::after {
+            left: 150%;
+            transition: 1.5s 0.5s;
+        }
+
+        .label {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            color: #ff0000;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .player {
+            font-size: 34px;
+            font-weight: 900;
+            text-align: center;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 5px;
+            letter-spacing: -1px;
+        }
+
+        .sub-info {
+            font-size: 18px;
+            color: rgba(255,255,255,0.6);
+            text-align: center;
+            font-weight: 400;
+        }
+
+        /* Fortschrittsbalken */
+        .timer-bar {
+            position: absolute;
+            bottom: 0; left: 0;
+            height: 4px;
+            background: #ff0000;
+            width: 0%;
+        }
+        .show .timer-bar { animation: progress 7s linear forwards; }
+        @keyframes progress { from { width: 100%; } to { width: 0%; } }
+    </style>
+</head>
+<body>
+
+    <div id="event-anchor">
+        <div id="main-card">
+            <div id="label" class="label">Tor erzielt</div>
+            <div id="player" class="player">-</div>
+            <div id="sub" class="sub-info">-</div>
+            <div class="timer-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
+            authDomain: "obs-overlay-2950c.firebaseapp.com",
+            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "obs-overlay-2950c",
+            storageBucket: "obs-overlay-2950c.firebasestorage.app",
+            messagingSenderId: "1094353952185",
+            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let lastEventId = null;
+        let gameId = null;
+
+        // Wir holen die Spiel-ID aus Firebase (wird im Admin-Panel gesetzt)
+        db.ref('active_game_id').on('value', snap => {
+            gameId = snap.val();
+            console.log("Tracking Game ID:", gameId);
+        });
+
+        async function checkSaisonmanager() {
+            if (!gameId) return;
+
+            try {
+                // Proxy um CORS zu umgehen
+                const url = `https://saisonmanager.de/api/v2/games/${gameId}.json`;
+                const proxyUrl = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(url);
+                
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                // Wir nehmen alle Tore und Strafen
+                const events = [...data.events.goals, ...data.events.penalties];
+                
+                // Sortieren nach ID (höchste ID = neuestes Ereignis)
+                events.sort((a, b) => b.id - a.id);
+
+                if (events.length > 0) {
+                    const latest = events[0];
+
+                    // Wenn es ein neues Ereignis ist
+                    if (lastEventId !== null && latest.id > lastEventId) {
+                        triggerOverlay(latest);
+                    }
+                    lastEventId = latest.id;
+                }
+            } catch (e) {
+                console.error("API Fehler:", e);
+            }
+        }
+
+        function triggerOverlay(ev) {
+            const card = document.getElementById('main-card');
+            const label = document.getElementById('label');
+            const player = document.getElementById('player');
+            const sub = document.getElementById('sub');
+
+            if (ev.scorer) { // Es ist ein Tor
+                label.innerText = "Tor erzielt";
+                label.style.color = "#ff0000";
+                card.style.borderTopColor = "#ff0000";
+                player.innerText = ev.scorer.firstname + " " + ev.scorer.lastname;
+                sub.innerText = ev.assist ? "Assist: " + ev.assist.firstname + " " + ev.assist.lastname : "Ohne Assist";
+            } else { // Es ist eine Strafe
+                label.innerText = "Zeitstrafe (" + ev.duration + " Min)";
+                label.style.color = "#ffffff";
+                card.style.borderTopColor = "#ffffff";
+                player.innerText = ev.player.firstname + " " + ev.player.lastname;
+                sub.innerText = ev.penalty_type;
+            }
+
+            // Animation starten
+            card.classList.add('show');
+            setTimeout(() => {
+                card.classList.remove('show');
+            }, 7000);
+        }
+
+        // Alle 10 Sekunden prüfen
+        setInterval(checkSaisonmanager, 10000);
+    </script>
+</body>
+</html>
