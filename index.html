@@ -2,81 +2,75 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Pro Broadcast Overlay</title>
+    <title>Floorball Elite Broadcast</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         
         body { 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-            font-family: 'Inter', sans-serif; 
-            background: transparent; 
+            margin: 0; padding: 0; overflow: hidden; 
+            font-family: 'Inter', sans-serif; background: transparent; 
         }
 
-        /* Der Anchor hält die Perspektive für die 3D-Animation */
-        #event-anchor {
+        /* Hauptcontainer: Positioniert das Overlay 7/8 unten */
+        #event-wrapper {
             position: absolute;
-            bottom: 8%; 
+            bottom: 12.5%; /* Exakt 7/8 Position */
             left: 50%;
             transform: translateX(-50%);
-            perspective: 1200px;
-        }
-
-        /* Die Hauptkarte */
-        #event-container {
-            width: 550px;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            color: white;
-            padding: 25px 35px;
             display: flex;
             align-items: center;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 4px;
+            justify-content: center;
+            overflow: hidden; /* Wichtig für Masken-Reveal */
+        }
+
+        /* Der Hintergrund-Balken */
+        #main-bar {
             position: relative;
-            
-            /* Start-Zustand für die Animation */
+            height: 90px;
+            width: 0; /* Startet bei 0 für Reveal-Effekt */
+            background: rgba(10, 10, 10, 0.98);
+            display: flex;
+            align-items: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            transition: width 0.6s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+
+        /* Rote Akzent-Leiste (Pinsel-Effekt) */
+        #accent-line {
+            position: absolute;
+            left: 0; top: 0;
+            width: 12px;
+            height: 100%;
+            background: #ff0000;
+            transform: scaleY(0);
+            transition: transform 0.4s 0.3s cubic-bezier(0.8, 0, 0.2, 1);
+        }
+
+        /* Text-Maskierung: Text "schiebt" sich ins Sichtfeld */
+        .content-mask {
+            overflow: hidden;
+            padding: 0 40px 0 35px;
+            display: flex;
+            flex-direction: column;
             opacity: 0;
-            visibility: hidden;
-            transform: rotateX(-95deg) translateY(80px) scale(0.8);
-            transition: all 1s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+            transform: translateX(-20px);
+            transition: all 0.5s 0.5s ease-out;
         }
 
-        /* Aktiv-Zustand (Einfahren) */
-        #event-container.active {
-            opacity: 1;
-            visibility: visible;
-            transform: rotateX(0deg) translateY(0) scale(1);
-        }
+        /* Status: Aktiviert */
+        #event-wrapper.active #main-bar { width: 550px; }
+        #event-wrapper.active #accent-line { transform: scaleY(1); }
+        #event-wrapper.active .content-mask { opacity: 1; transform: translateX(0); }
 
-        /* Linker Bereich (Icon/Typ) */
-        .event-type-box {
-            font-size: 38px;
-            font-weight: 900;
-            padding-right: 30px;
-            margin-right: 30px;
-            border-right: 2px solid rgba(255,255,255,0.15);
-            min-width: 60px;
-            text-align: center;
-            text-shadow: 0 0 15px rgba(255,0,0,0.4);
-        }
-
-        /* Rechter Bereich (Texte) */
-        .event-main {
-            flex-grow: 1;
-        }
-
-        .event-label {
-            font-size: 12px;
-            text-transform: uppercase;
+        .label {
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: 6px;
-            color: #888;
-            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: #ff0000;
+            margin-bottom: 2px;
         }
 
         .player-name {
@@ -84,69 +78,47 @@
             font-weight: 900;
             text-transform: uppercase;
             line-height: 1;
-            letter-spacing: -1.5px;
-            margin-bottom: 4px;
+            color: #fff;
+            letter-spacing: -0.5px;
         }
 
         .detail-text {
-            font-size: 17px;
-            color: rgba(255,255,255,0.5);
+            font-size: 16px;
+            color: rgba(255,255,255,0.6);
             font-style: italic;
-            font-weight: 400;
+            margin-top: 4px;
         }
 
-        /* Fortschrittsbalken am unteren Rand */
-        .progress-bar-container {
+        /* Timer-Fortschritt am unteren Rand (sehr dezent) */
+        #timer-progress {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: rgba(255,255,255,0.05);
-        }
-
-        .progress-fill {
-            height: 100%;
+            bottom: 0; left: 0;
+            height: 3px;
             width: 0%;
-            background: #ff4444;
+            background: #ff0000;
         }
 
-        .active .progress-fill {
-            animation: timer 5s linear forwards;
+        #event-wrapper.active #timer-progress {
+            animation: countdown 5s linear forwards;
         }
 
-        @keyframes timer {
+        @keyframes countdown {
             from { width: 100%; }
             to { width: 0%; }
-        }
-
-        /* Glanzeffekt, der einmal drüberfährt */
-        #event-container::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-        }
-        #event-container.active::after {
-            left: 150%;
-            transition: 1.5s 0.6s;
         }
     </style>
 </head>
 <body>
 
-    <div id="event-anchor">
-        <div id="event-container">
-            <div id="type-icon" class="event-type-box">⚽</div>
-            <div class="event-main">
-                <div id="label" class="event-label">Ereignis</div>
+    <div id="event-wrapper">
+        <div id="main-bar">
+            <div id="accent-line"></div>
+            <div class="content-mask">
+                <div id="label" class="label">Tor erzielt</div>
                 <div id="player" class="player-name">-</div>
                 <div id="detail" class="detail-text">-</div>
             </div>
-            <div class="progress-bar-container">
-                <div class="progress-fill" id="fill"></div>
-            </div>
+            <div id="timer-progress"></div>
         </div>
     </div>
 
@@ -163,7 +135,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const container = document.getElementById('event-container');
+        const wrapper = document.getElementById('event-wrapper');
         
         let initialLoad = true;
 
@@ -174,39 +146,37 @@
             }
             const data = snapshot.val();
             if (data) {
-                const labelEl = document.getElementById('label');
-                const iconEl = document.getElementById('type-icon');
-                const fillEl = document.getElementById('fill');
-                
-                if (data.type === 'goal') {
-                    labelEl.innerText = "Tor erzielt";
-                    labelEl.style.color = "#ff4444"; 
-                    iconEl.innerText = "GOAL";
-                    iconEl.style.fontSize = "18px"; // Wort statt Icon für Pro-Look
-                    iconEl.style.color = "#ff4444";
-                    fillEl.style.background = "#ff4444";
-                    
-                    document.getElementById('player').innerText = data.player;
-                    document.getElementById('detail').innerText = data.assist ? `Assist: ${data.assist}` : "Einzelleistung";
-                } else {
-                    labelEl.innerText = "Zeitstrafe";
-                    labelEl.style.color = "#ffffff"; 
-                    iconEl.innerText = data.duration || "2'";
-                    iconEl.style.fontSize = "38px";
-                    iconEl.style.color = "#ffffff";
-                    fillEl.style.background = "#ffffff";
+                const label = document.getElementById('label');
+                const player = document.getElementById('player');
+                const detail = document.getElementById('detail');
+                const accent = document.getElementById('accent-line');
+                const progress = document.getElementById('timer-progress');
 
-                    document.getElementById('player').innerText = data.player;
-                    document.getElementById('detail').innerText = "Unsportliches Verhalten / Stoßen"; // Beispiel, falls kein Grund mitkommt
+                // Daten setzen
+                if (data.type === 'goal') {
+                    label.innerText = "Tor erzielt";
+                    label.style.color = "#ff0000";
+                    accent.style.background = "#ff0000";
+                    progress.style.background = "#ff0000";
+                    player.innerText = data.player;
+                    detail.innerText = data.assist ? `Assist: ${data.assist}` : "Einzelleistung";
+                } else {
+                    label.innerText = "Zeitstrafe";
+                    label.style.color = "#ffffff";
+                    accent.style.background = "#ffffff";
+                    progress.style.background = "#ffffff";
+                    player.innerText = data.player;
+                    detail.innerText = `Dauer: ${data.duration}`;
                 }
 
-                // Animation triggern
-                container.classList.remove('active');
-                void container.offsetWidth; // Reflow triggern für Neustart der Animation
-                container.classList.add('active');
+                // Animation Sequenz
+                wrapper.classList.remove('active');
+                void wrapper.offsetWidth; // Trigger Reflow
+                wrapper.classList.add('active');
 
+                // Nach 5 Sekunden wieder ausfahren
                 setTimeout(() => {
-                    container.classList.remove('active');
+                    wrapper.classList.remove('active');
                 }, 5000);
             }
         });
