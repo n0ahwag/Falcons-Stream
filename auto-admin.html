@@ -8,11 +8,27 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
         .header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .back-btn { color: #888; text-decoration: none; font-size: 14px; border: 1px solid #333; padding: 8px 15px; border-radius: 8px; }
+
         .config-card { background: #1e1e1e; padding: 20px; border-radius: 12px; width: 100%; max-width: 560px; border: 1px solid #333; margin-bottom: 20px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; outline: none; }
+        
+        /* Button Zustände */
+        #loadBtn { 
+            background: #ff0000; border: none; color: white; border-radius: 8px; 
+            padding: 0 20px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            min-width: 120px;
+        }
+        #loadBtn:disabled { 
+            background: #444 !important; 
+            color: #888 !important; 
+            cursor: not-allowed; 
+            opacity: 0.7; 
+        }
+
         .mode-box { display: flex; align-items: center; justify-content: space-between; background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #444; }
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -20,15 +36,17 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #ff0000; }
         input:checked + .slider:before { transform: translateX(24px); }
+
         .timeline { width: 100%; max-width: 600px; }
         .event-item { background: #1e1e1e; margin-bottom: 8px; padding: 12px 20px; border-radius: 10px; display: flex; align-items: center; cursor: pointer; border-left: 5px solid transparent; transition: 0.2s; border: 1px solid #333; }
-        .event-item:hover { transform: scale(1.02); background: #252525; }
+        .event-item:hover { transform: scale(1.01); background: #252525; }
         .event-item.goal { border-left-color: #ff0000; }
         .event-item.penalty { border-left-color: #ffffff; }
         .event-time { font-weight: 800; color: #ff0000; width: 60px; font-size: 14px; }
         .event-info { flex-grow: 1; }
         .event-player { font-weight: 600; font-size: 16px; display: block; }
         .event-detail { font-size: 12px; color: #888; }
+        
         #sync-status { font-size: 12px; color: #666; margin-top: 10px; text-align: center; }
     </style>
 </head>
@@ -42,7 +60,7 @@
     <div class="config-card">
         <div class="input-group">
             <input type="number" id="gameId" placeholder="ID (z.B. 43426)">
-            <button onclick="updateGameId()" style="background:#ff0000; border:none; color:white; border-radius:8px; padding:0 20px; font-weight:bold; cursor:pointer;">ID LADEN</button>
+            <button id="loadBtn" onclick="updateGameId()">ID LADEN</button>
         </div>
         
         <div class="mode-box">
@@ -52,7 +70,7 @@
                 <span class="slider"></span>
             </label>
         </div>
-        <div id="sync-status">Status: Warte auf Eingabe...</div>
+        <div id="sync-status">Bereit.</div>
     </div>
 
     <div class="timeline" id="timeline"></div>
@@ -74,20 +92,45 @@
         let autoMode = false;
         let lastEventId = null;
 
+        // Liste der Proxies für Fallback
+        const proxies = [
+            (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+            (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+        ];
+
         db.ref('auto_settings').on('value', snap => {
             const val = snap.val() || {};
             activeId = val.gameId || "";
             autoMode = val.autoMode || false;
             document.getElementById('gameId').value = activeId;
             document.getElementById('autoToggle').checked = autoMode;
-            if(activeId) fetchTimeline();
+            if(activeId && !lastEventId) fetchTimeline();
         });
 
-        function updateGameId() {
+        async function updateGameId() {
             const id = document.getElementById('gameId').value;
             if(!id) return alert("Bitte ID eingeben!");
-            db.ref('auto_settings/gameId').set(id);
+            
+            setLoading(true);
+            await db.ref('auto_settings/gameId').set(id);
             lastEventId = null; 
+            await fetchTimeline();
+            setLoading(false);
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('loadBtn');
+            const status = document.getElementById('sync-status');
+            if(isLoading) {
+                btn.disabled = true;
+                btn.innerText = "LADE...";
+                status.innerText = "Verbindung zum Saisonmanager wird aufgebaut...";
+                status.style.color = "#888";
+            } else {
+                btn.disabled = false;
+                btn.innerText = "ID LADEN";
+            }
         }
 
         function toggleAutoMode() {
@@ -97,17 +140,26 @@
         async function fetchTimeline() {
             if(!activeId) return;
             const status = document.getElementById('sync-status');
+            const targetUrl = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
             
-            try {
-                // Wir nutzen den "Raw"-Modus vom AllOrigins Proxy, um das JSON direkt zu bekommen
-                const targetUrl = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}&cb=${Date.now()}`;
+            let success = false;
+            let data = null;
 
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("API-Anfrage fehlgeschlagen");
-                
-                const data = await response.json();
-                
+            // Versuche verschiedene Proxies nacheinander
+            for (let i = 0; i < proxies.length; i++) {
+                try {
+                    const response = await fetch(proxies[i](targetUrl));
+                    if (response.ok) {
+                        data = await response.json();
+                        success = true;
+                        break; 
+                    }
+                } catch (e) {
+                    console.warn(`Proxy ${i} fehlgeschlagen, versuche nächsten...`);
+                }
+            }
+
+            if (success && data) {
                 const goals = (data.events.goals || []).map(g => ({...g, type: 'goal', sort: g.id}));
                 const pens = (data.events.penalties || []).map(p => ({...p, type: 'penalty', sort: p.id}));
                 const allEvents = [...goals, ...pens].sort((a,b) => b.sort - a.sort);
@@ -115,19 +167,23 @@
                 renderTimeline(allEvents);
                 checkAutoTrigger(allEvents);
 
-                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString() + " (Stabil)";
                 status.style.color = "#00ff00";
-            } catch (e) {
-                console.error("API Error:", e);
-                status.innerText = "Sync Fehler! Prüfe die Konsole (F12)";
+            } else {
+                status.innerText = "Sync Fehler! Alle Proxies blockiert. ID prüfen oder Seite neu laden.";
                 status.style.color = "#ff4444";
             }
+            setLoading(false);
         }
 
         function renderTimeline(events) {
             const container = document.getElementById('timeline');
-            container.innerHTML = '<h3 style="margin-bottom:15px">Timeline: ETV vs Frankfurt</h3>';
-            if(events.length === 0) { container.innerHTML += '<div style="color:#555">Noch keine Ereignisse eingetragen.</div>'; return; }
+            container.innerHTML = '<h3 style="margin-bottom:15px; font-size:14px; color:#888; text-transform:uppercase;">Ereignisse</h3>';
+            
+            if(events.length === 0) { 
+                container.innerHTML += '<div style="color:#555; text-align:center; padding:20px;">Noch keine Ereignisse eingetragen.</div>'; 
+                return; 
+            }
 
             events.forEach(ev => {
                 const div = document.createElement('div');
@@ -158,8 +214,8 @@
             db.ref('triggered_event').set({ data: ev, timestamp: Date.now() });
         }
 
-        // Alle 15 Sekunden aktualisieren
-        setInterval(fetchTimeline, 15000);
+        // Alle 30 Sekunden im Hintergrund aktualisieren (schont API & Proxy)
+        setInterval(fetchTimeline, 30000);
     </script>
 </body>
 </html>
