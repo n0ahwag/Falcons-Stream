@@ -14,19 +14,19 @@
 
         .config-card { background: #1e1e1e; padding: 20px; border-radius: 12px; width: 100%; max-width: 560px; border: 1px solid #333; margin-bottom: 20px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; outline: none; }
+        input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; outline: none; font-size: 16px; }
         
-        /* Button Zustände */
+        /* Button Style & Loading State */
         #loadBtn { 
             background: #ff0000; border: none; color: white; border-radius: 8px; 
-            padding: 0 20px; font-weight: bold; cursor: pointer; transition: 0.3s;
-            min-width: 120px;
+            padding: 0 25px; font-weight: bold; cursor: pointer; transition: all 0.3s;
+            min-width: 130px; text-transform: uppercase;
         }
         #loadBtn:disabled { 
-            background: #444 !important; 
-            color: #888 !important; 
-            cursor: not-allowed; 
-            opacity: 0.7; 
+            background: #333; 
+            color: #666; 
+            cursor: not-allowed;
+            transform: scale(0.98);
         }
 
         .mode-box { display: flex; align-items: center; justify-content: space-between; background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #444; }
@@ -37,40 +37,47 @@
         input:checked + .slider { background-color: #ff0000; }
         input:checked + .slider:before { transform: translateX(24px); }
 
+        /* Timeline Items */
         .timeline { width: 100%; max-width: 600px; }
-        .event-item { background: #1e1e1e; margin-bottom: 8px; padding: 12px 20px; border-radius: 10px; display: flex; align-items: center; cursor: pointer; border-left: 5px solid transparent; transition: 0.2s; border: 1px solid #333; }
-        .event-item:hover { transform: scale(1.01); background: #252525; }
-        .event-item.goal { border-left-color: #ff0000; }
-        .event-item.penalty { border-left-color: #ffffff; }
-        .event-time { font-weight: 800; color: #ff0000; width: 60px; font-size: 14px; }
-        .event-info { flex-grow: 1; }
-        .event-player { font-weight: 600; font-size: 16px; display: block; }
-        .event-detail { font-size: 12px; color: #888; }
+        .event-item { 
+            background: #1e1e1e; margin-bottom: 10px; padding: 15px 20px; border-radius: 10px; 
+            display: flex; align-items: center; cursor: pointer; border: 1px solid #333;
+            transition: 0.2s; 
+        }
+        .event-item:hover { background: #252525; border-color: #ff0000; transform: translateY(-2px); }
+        .event-item.goal { border-left: 6px solid #ff0000; }
+        .event-item.penalty { border-left: 6px solid #ffffff; }
         
-        #sync-status { font-size: 12px; color: #666; margin-top: 10px; text-align: center; }
+        .event-time { font-weight: 800; color: #ff0000; width: 50px; font-size: 16px; }
+        .penalty .event-time { color: white; }
+        .event-info { flex-grow: 1; padding-left: 10px; }
+        .event-player { font-weight: 700; font-size: 16px; display: block; text-transform: uppercase; }
+        .event-detail { font-size: 12px; color: #aaa; }
+        
+        #sync-status { font-size: 11px; color: #555; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>🤖 Auto-Sync Control</h1>
-        <a href="admin.html" class="back-btn">← Admin</a>
+        <h1>🤖 Auto-Regie</h1>
+        <a href="admin.html" class="back-btn">← Home</a>
     </div>
 
     <div class="config-card">
         <div class="input-group">
-            <input type="number" id="gameId" placeholder="ID (z.B. 43426)">
-            <button id="loadBtn" onclick="updateGameId()">ID LADEN</button>
+            <input type="number" id="gameId" placeholder="Spiel-ID (z.B. 43426)">
+            <button id="loadBtn" onclick="updateGameId()">ID Laden</button>
         </div>
         
         <div class="mode-box">
-            <span><b>Vollautomatischer Modus</b></span>
+            <span><b>Vollautomatik</b><br><small style="color:#888">Sofort-Anzeige bei API-Eintrag</small></span>
             <label class="switch">
                 <input type="checkbox" id="autoToggle" onchange="toggleAutoMode()">
                 <span class="slider"></span>
             </label>
         </div>
-        <div id="sync-status">Bereit.</div>
+        <div id="sync-status">Bereit zum Laden.</div>
     </div>
 
     <div class="timeline" id="timeline"></div>
@@ -92,13 +99,6 @@
         let autoMode = false;
         let lastEventId = null;
 
-        // Liste der Proxies für Fallback
-        const proxies = [
-            (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-            (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-        ];
-
         db.ref('auto_settings').on('value', snap => {
             const val = snap.val() || {};
             activeId = val.gameId || "";
@@ -110,23 +110,19 @@
 
         async function updateGameId() {
             const id = document.getElementById('gameId').value;
-            if(!id) return alert("Bitte ID eingeben!");
+            if(!id) return;
             
-            setLoading(true);
+            toggleLoading(true);
             await db.ref('auto_settings/gameId').set(id);
             lastEventId = null; 
             await fetchTimeline();
-            setLoading(false);
         }
 
-        function setLoading(isLoading) {
+        function toggleLoading(isLoading) {
             const btn = document.getElementById('loadBtn');
-            const status = document.getElementById('sync-status');
             if(isLoading) {
                 btn.disabled = true;
-                btn.innerText = "LADE...";
-                status.innerText = "Verbindung zum Saisonmanager wird aufgebaut...";
-                status.style.color = "#888";
+                btn.innerText = "LÄDT...";
             } else {
                 btn.disabled = false;
                 btn.innerText = "ID LADEN";
@@ -140,26 +136,16 @@
         async function fetchTimeline() {
             if(!activeId) return;
             const status = document.getElementById('sync-status');
-            const targetUrl = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
             
-            let success = false;
-            let data = null;
-
-            // Versuche verschiedene Proxies nacheinander
-            for (let i = 0; i < proxies.length; i++) {
-                try {
-                    const response = await fetch(proxies[i](targetUrl));
-                    if (response.ok) {
-                        data = await response.json();
-                        success = true;
-                        break; 
-                    }
-                } catch (e) {
-                    console.warn(`Proxy ${i} fehlgeschlagen, versuche nächsten...`);
-                }
-            }
-
-            if (success && data) {
+            try {
+                // Wir nutzen AllOrigins mit dem JSON Wrapper - das ist die stabilste Methode
+                const url = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
+                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`);
+                
+                if (!response.ok) throw new Error();
+                const json = await response.json();
+                const data = JSON.parse(json.contents);
+                
                 const goals = (data.events.goals || []).map(g => ({...g, type: 'goal', sort: g.id}));
                 const pens = (data.events.penalties || []).map(p => ({...p, type: 'penalty', sort: p.id}));
                 const allEvents = [...goals, ...pens].sort((a,b) => b.sort - a.sort);
@@ -167,21 +153,22 @@
                 renderTimeline(allEvents);
                 checkAutoTrigger(allEvents);
 
-                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString() + " (Stabil)";
+                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
                 status.style.color = "#00ff00";
-            } else {
-                status.innerText = "Sync Fehler! Alle Proxies blockiert. ID prüfen oder Seite neu laden.";
+            } catch (e) {
+                status.innerText = "Sync Fehler! Prüfe die ID oder versuche es gleich nochmal.";
                 status.style.color = "#ff4444";
+            } finally {
+                toggleLoading(false);
             }
-            setLoading(false);
         }
 
         function renderTimeline(events) {
             const container = document.getElementById('timeline');
-            container.innerHTML = '<h3 style="margin-bottom:15px; font-size:14px; color:#888; text-transform:uppercase;">Ereignisse</h3>';
+            container.innerHTML = '<h3 style="margin:20px 0 10px 0; font-size:12px; color:#666; text-transform:uppercase; letter-spacing:1px;">Timeline</h3>';
             
             if(events.length === 0) { 
-                container.innerHTML += '<div style="color:#555; text-align:center; padding:20px;">Noch keine Ereignisse eingetragen.</div>'; 
+                container.innerHTML += '<div style="color:#444; text-align:center; margin-top:20px;">Keine Ereignisse im Spiel gefunden.</div>'; 
                 return; 
             }
 
@@ -192,7 +179,14 @@
                 const player = isGoal ? `${ev.scorer.firstname} ${ev.scorer.lastname}` : `${ev.player.firstname} ${ev.player.lastname}`;
                 const detail = isGoal ? (ev.assist ? `Assist: ${ev.assist.firstname} ${ev.assist.lastname}` : "Einzelleistung") : `${ev.duration} Min - ${ev.penalty_type}`;
                 
-                div.innerHTML = `<div class="event-time">${ev.game_time}'</div><div class="event-info"><span class="event-player">${player}</span><span class="event-detail">${detail}</span></div>`;
+                div.innerHTML = `
+                    <div class="event-time">${ev.game_time}'</div>
+                    <div class="event-info">
+                        <span class="event-player">${player}</span>
+                        <span class="event-detail">${detail}</span>
+                    </div>
+                `;
+                
                 div.onclick = () => triggerOverlay(ev);
                 container.appendChild(div);
             });
@@ -214,8 +208,8 @@
             db.ref('triggered_event').set({ data: ev, timestamp: Date.now() });
         }
 
-        // Alle 30 Sekunden im Hintergrund aktualisieren (schont API & Proxy)
-        setInterval(fetchTimeline, 30000);
+        // Alle 20 Sekunden im Hintergrund
+        setInterval(fetchTimeline, 20000);
     </script>
 </body>
 </html>
