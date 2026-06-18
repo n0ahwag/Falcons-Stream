@@ -41,7 +41,7 @@
 
     <div class="config-card">
         <div class="input-group">
-            <input type="number" id="gameId" placeholder="ID (z.B. 195432)">
+            <input type="number" id="gameId" placeholder="ID (z.B. 43426)">
             <button onclick="updateGameId()" style="background:#ff0000; border:none; color:white; border-radius:8px; padding:0 20px; font-weight:bold; cursor:pointer;">ID LADEN</button>
         </div>
         
@@ -85,9 +85,8 @@
 
         function updateGameId() {
             const id = document.getElementById('gameId').value;
-            if(id.length < 3) return alert("Bitte eine gültige Spiel-ID eingeben!");
+            if(!id) return alert("Bitte ID eingeben!");
             db.ref('auto_settings/gameId').set(id);
-            // Reset LastID damit neue Events vom neuen Spiel getrackt werden
             lastEventId = null; 
         }
 
@@ -100,16 +99,14 @@
             const status = document.getElementById('sync-status');
             
             try {
-                // AllOrigins Proxy ist besser für JSON Content
+                // Wir nutzen den "Raw"-Modus vom AllOrigins Proxy, um das JSON direkt zu bekommen
                 const targetUrl = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&timestamp=${Date.now()}`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}&cb=${Date.now()}`;
 
                 const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error("Proxy-Fehler");
+                if (!response.ok) throw new Error("API-Anfrage fehlgeschlagen");
                 
-                const json = await response.json();
-                // AllOrigins verpackt die Antwort in ein "contents" Feld
-                const data = JSON.parse(json.contents);
+                const data = await response.json();
                 
                 const goals = (data.events.goals || []).map(g => ({...g, type: 'goal', sort: g.id}));
                 const pens = (data.events.penalties || []).map(p => ({...p, type: 'penalty', sort: p.id}));
@@ -121,15 +118,15 @@
                 status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
                 status.style.color = "#00ff00";
             } catch (e) {
-                console.error("Sync Error:", e);
-                status.innerText = "Sync Fehler! (Eventuell falsche ID?)";
+                console.error("API Error:", e);
+                status.innerText = "Sync Fehler! Prüfe die Konsole (F12)";
                 status.style.color = "#ff4444";
             }
         }
 
         function renderTimeline(events) {
             const container = document.getElementById('timeline');
-            container.innerHTML = '<h3 style="margin-bottom:15px">Ereignisse des Spiels</h3>';
+            container.innerHTML = '<h3 style="margin-bottom:15px">Timeline: ETV vs Frankfurt</h3>';
             if(events.length === 0) { container.innerHTML += '<div style="color:#555">Noch keine Ereignisse eingetragen.</div>'; return; }
 
             events.forEach(ev => {
@@ -161,6 +158,7 @@
             db.ref('triggered_event').set({ data: ev, timestamp: Date.now() });
         }
 
+        // Alle 15 Sekunden aktualisieren
         setInterval(fetchTimeline, 15000);
     </script>
 </body>
