@@ -8,15 +8,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background: #121212; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        
         .header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .back-btn { color: #888; text-decoration: none; font-size: 14px; border: 1px solid #333; padding: 8px 15px; border-radius: 8px; }
-
         .config-card { background: #1e1e1e; padding: 20px; border-radius: 12px; width: 100%; max-width: 560px; border: 1px solid #333; margin-bottom: 20px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
         input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #444; background: #252525; color: white; outline: none; }
-        
-        /* Auto-Toggle Style */
         .mode-box { display: flex; align-items: center; justify-content: space-between; background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #444; }
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -24,26 +20,16 @@
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #ff0000; }
         input:checked + .slider:before { transform: translateX(24px); }
-
-        /* Timeline */
         .timeline { width: 100%; max-width: 600px; }
-        .event-item { 
-            background: #1e1e1e; margin-bottom: 8px; padding: 12px 20px; border-radius: 10px; 
-            display: flex; align-items: center; cursor: pointer; border-left: 5px solid transparent;
-            transition: 0.2s; border: 1px solid #333;
-        }
+        .event-item { background: #1e1e1e; margin-bottom: 8px; padding: 12px 20px; border-radius: 10px; display: flex; align-items: center; cursor: pointer; border-left: 5px solid transparent; transition: 0.2s; border: 1px solid #333; }
         .event-item:hover { transform: scale(1.02); background: #252525; }
         .event-item.goal { border-left-color: #ff0000; }
         .event-item.penalty { border-left-color: #ffffff; }
-        
         .event-time { font-weight: 800; color: #ff0000; width: 60px; font-size: 14px; }
         .event-info { flex-grow: 1; }
         .event-player { font-weight: 600; font-size: 16px; display: block; }
         .event-detail { font-size: 12px; color: #888; }
-        .trigger-icon { opacity: 0.3; font-size: 20px; }
-        .event-item:hover .trigger-icon { opacity: 1; color: #ff0000; }
-        
-        #sync-status { font-size: 12px; color: #666; margin-top: 10px; }
+        #sync-status { font-size: 12px; color: #666; margin-top: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -55,23 +41,21 @@
 
     <div class="config-card">
         <div class="input-group">
-            <input type="number" id="gameId" placeholder="Saisonmanager Spiel-ID (z.B. 195432)">
-            <button onclick="updateGameId()" style="background:#ff0000; border:none; color:white; border-radius:8px; padding:0 20px; font-weight:bold; cursor:pointer;">Laden</button>
+            <input type="number" id="gameId" placeholder="ID (z.B. 195432)">
+            <button onclick="updateGameId()" style="background:#ff0000; border:none; color:white; border-radius:8px; padding:0 20px; font-weight:bold; cursor:pointer;">ID LADEN</button>
         </div>
         
         <div class="mode-box">
-            <span><b>Vollautomatischer Modus</b><br><small style="color:#888">Tore ploppen sofort bei API-Eintrag auf</small></span>
+            <span><b>Vollautomatischer Modus</b></span>
             <label class="switch">
                 <input type="checkbox" id="autoToggle" onchange="toggleAutoMode()">
                 <span class="slider"></span>
             </label>
         </div>
-        <div id="sync-status">Status: Warte auf ID...</div>
+        <div id="sync-status">Status: Warte auf Eingabe...</div>
     </div>
 
-    <div class="timeline" id="timeline">
-        <!-- Events erscheinen hier -->
-    </div>
+    <div class="timeline" id="timeline"></div>
 
     <script>
         const firebaseConfig = {
@@ -89,9 +73,7 @@
         let activeId = "";
         let autoMode = false;
         let lastEventId = null;
-        let knownEvents = [];
 
-        // Firebase Sync
         db.ref('auto_settings').on('value', snap => {
             const val = snap.val() || {};
             activeId = val.gameId || "";
@@ -103,58 +85,61 @@
 
         function updateGameId() {
             const id = document.getElementById('gameId').value;
+            if(id.length < 3) return alert("Bitte eine gültige Spiel-ID eingeben!");
             db.ref('auto_settings/gameId').set(id);
+            // Reset LastID damit neue Events vom neuen Spiel getrackt werden
+            lastEventId = null; 
         }
 
         function toggleAutoMode() {
-            const mode = document.getElementById('autoToggle').checked;
-            db.ref('auto_settings/autoMode').set(mode);
+            db.ref('auto_settings/autoMode').set(document.getElementById('autoToggle').checked);
         }
 
         async function fetchTimeline() {
             if(!activeId) return;
+            const status = document.getElementById('sync-status');
+            
             try {
-                const proxy = "https://api.codetabs.com/v1/proxy?quest=";
-                const url = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
-                const response = await fetch(proxy + encodeURIComponent(url));
-                const data = await response.json();
+                // AllOrigins Proxy ist besser für JSON Content
+                const targetUrl = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&timestamp=${Date.now()}`;
+
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error("Proxy-Fehler");
+                
+                const json = await response.json();
+                // AllOrigins verpackt die Antwort in ein "contents" Feld
+                const data = JSON.parse(json.contents);
                 
                 const goals = (data.events.goals || []).map(g => ({...g, type: 'goal', sort: g.id}));
                 const pens = (data.events.penalties || []).map(p => ({...p, type: 'penalty', sort: p.id}));
-                
                 const allEvents = [...goals, ...pens].sort((a,b) => b.sort - a.sort);
                 
                 renderTimeline(allEvents);
                 checkAutoTrigger(allEvents);
 
-                document.getElementById('sync-status').innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.style.color = "#00ff00";
             } catch (e) {
-                document.getElementById('sync-status').innerText = "Sync Fehler!";
+                console.error("Sync Error:", e);
+                status.innerText = "Sync Fehler! (Eventuell falsche ID?)";
+                status.style.color = "#ff4444";
             }
         }
 
         function renderTimeline(events) {
             const container = document.getElementById('timeline');
-            container.innerHTML = '<h3>Timeline (Klicken zum Anzeigen)</h3>';
-            
+            container.innerHTML = '<h3 style="margin-bottom:15px">Ereignisse des Spiels</h3>';
+            if(events.length === 0) { container.innerHTML += '<div style="color:#555">Noch keine Ereignisse eingetragen.</div>'; return; }
+
             events.forEach(ev => {
                 const div = document.createElement('div');
                 div.className = `event-item ${ev.type}`;
-                
                 const isGoal = ev.type === 'goal';
                 const player = isGoal ? `${ev.scorer.firstname} ${ev.scorer.lastname}` : `${ev.player.firstname} ${ev.player.lastname}`;
                 const detail = isGoal ? (ev.assist ? `Assist: ${ev.assist.firstname} ${ev.assist.lastname}` : "Einzelleistung") : `${ev.duration} Min - ${ev.penalty_type}`;
-                const time = ev.game_time + "'";
-
-                div.innerHTML = `
-                    <div class="event-time">${time}</div>
-                    <div class="event-info">
-                        <span class="event-player">${player}</span>
-                        <span class="event-detail">${detail}</span>
-                    </div>
-                    <div class="trigger-icon">🚀</div>
-                `;
                 
+                div.innerHTML = `<div class="event-time">${ev.game_time}'</div><div class="event-info"><span class="event-player">${player}</span><span class="event-detail">${detail}</span></div>`;
                 div.onclick = () => triggerOverlay(ev);
                 container.appendChild(div);
             });
@@ -173,13 +158,10 @@
         }
 
         function triggerOverlay(ev) {
-            db.ref('triggered_event').set({
-                data: ev,
-                timestamp: Date.now()
-            });
+            db.ref('triggered_event').set({ data: ev, timestamp: Date.now() });
         }
 
-        setInterval(fetchTimeline, 15000); // Alle 15 Sek prüfen
+        setInterval(fetchTimeline, 15000);
     </script>
 </body>
 </html>
