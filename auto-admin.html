@@ -56,6 +56,11 @@
             <div class="progress-bar"></div>
         </div>
     </div>
+    <form action="updateGameId">
+        <label for="fname">Game-ID:</label><br>
+        <input type="text" id="gameid" name="gameid" value="00000"><br>
+        <input type="submit" value="Submit">
+    </form>
 
     <script>
         const firebaseConfig = {
@@ -86,7 +91,7 @@
 
         function updateGameId() {
             const id = document.getElementById('gameId').value;
-            if(id.length < 3) return alert("Bitte eine gültige Spiel-ID eingeben!");
+            if(id.length !== 5) return alert("Bitte eine gültige Spiel-ID eingeben!");
             db.ref('auto_settings/gameId').set(id);
             // Reset Länge damit neue Events vom neuen Spiel getrackt werden
             lastLength = 0; 
