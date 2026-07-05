@@ -1,188 +1,369 @@
-<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regie-Zentrale | Floorball Broadcast</title>
+    <title>Broadcast Overlay</title>
+    <title>Floorball Auto-Regie Professional</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: transparent; }
+
+        #container {
+            position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 500px; background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            border-radius: 4px; color: white; display: flex; align-items: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px 30px;
+            /* Animation hidden state */
+            opacity: 0; transform: rotateX(-90deg) translateY(50px);
+            transition: all 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.28);
+            visibility: hidden;
+        }
+
+        .card.active { opacity: 1; transform: rotateX(0deg) translateY(0); visibility: visible; }
+
+        .time-badge {
+            font-size: 38px; font-weight: 900; color: #ff0000;
+            padding-right: 25px; margin-right: 25px;
+            border-right: 2px solid rgba(255,255,255,0.1);
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background: #0a0a0b; color: white; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-        nav { width: 100%; background: #141417; padding: 15px 0; border-bottom: 1px solid #2d2d33; display: flex; justify-content: center; gap: 20px; position: sticky; top: 0; z-index: 100; }
-        nav a { color: #888; text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 8px 16px; border-radius: 6px; border: 1px solid #333; transition: 0.3s; }
-        nav a:hover { border-color: #ff0000; color: #ff0000; }
-        .game-header { width: 90%; max-width: 600px; background: linear-gradient(145deg, #1c1c21, #141417); margin-top: 25px; padding: 25px; border-radius: 20px; border: 1px solid #2d2d33; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-        .team-info { flex: 1; text-align: center; }
-        .team-info span { display: block; font-size: 10px; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 5px; }
-        .team-info b { font-size: 18px; font-weight: 900; }
-        .score-display { font-size: 40px; font-weight: 900; color: #ff0000; padding: 0 20px; }
-        .setup-area { width: 90%; max-width: 600px; margin-top: 20px; display: flex; gap: 10px; }
-        input { flex: 1; background: #141417; border: 1px solid #2d2d33; border-radius: 10px; padding: 15px; color: white; font-size: 16px; outline: none; }
-        button#loadBtn { background: #ff0000; border: none; border-radius: 10px; color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 0 25px; min-width: 120px; }
-        button#loadBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
-        .auto-director { width: 90%; max-width: 600px; margin-top: 15px; background: #1c1c21; padding: 15px 25px; border-radius: 15px; border: 1px solid #2d2d33; display: flex; justify-content: space-between; align-items: center; }
-        .timeline { width: 90%; max-width: 600px; margin-top: 30px; padding-bottom: 50px; }
-        .event-card { background: #141417; margin-bottom: 10px; padding: 15px 20px; border-radius: 12px; display: flex; align-items: center; border: 1px solid #2d2d33; cursor: pointer; transition: 0.2s; position: relative; }
-        .event-card:hover { transform: translateX(10px); background: #1c1c21; border-color: #ff0000; }
-        .ev-time { font-size: 18px; font-weight: 900; width: 45px; color: #ff0000; }
+        body { font-family: 'Inter', sans-serif; background: #0f0f11; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        .header { width: 100%; max-width: 600px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #222; padding-bottom: 15px; }
+        .back-btn { color: #888; text-decoration: none; font-size: 13px; border: 1px solid #333; padding: 8px 15px; border-radius: 8px; transition: 0.3s; }
+        .back-btn:hover { border-color: #ff0000; color: #ff0000; }
+
+        .config-card { background: #18181b; padding: 20px; border-radius: 12px; width: 100%; max-width: 560px; border: 1px solid #2d2d30; margin-bottom: 30px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #09090b; color: white; outline: none; font-size: 16px; }
+        button { background: #ff0000; border: none; color: white; border-radius: 8px; padding: 0 20px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        button:disabled { background: #333; color: #666; }
+
+        .status-bar { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #666; padding: 10px; background: #09090b; border-radius: 6px; }
+
+        /* Timeline */
+        .timeline { width: 100%; max-width: 600px; }
+        .period-header { font-size: 11px; text-transform: uppercase; color: #ff0000; letter-spacing: 2px; margin: 30px 0 15px 0; font-weight: 800; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        
+        .event-card { 
+            background: #18181b; margin-bottom: 10px; padding: 15px 20px; border-radius: 10px; 
+            display: flex; align-items: center; cursor: pointer; border: 1px solid #2d2d30;
+            transition: all 0.2s ease; border-left: 5px solid #444;
+        }
+
+        .main { flex-grow: 1; }
+        .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 5px; color: #888; margin-bottom: 3px; }
+        .player { font-size: 28px; font-weight: 900; text-transform: uppercase; line-height: 1.1; letter-spacing: -1px; }
+        .sub { font-size: 15px; color: rgba(255,255,255,0.5); font-style: italic; margin-top: 2px; }
+
+        .progress-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: #ff0000; width: 0%; }
+        .active .progress-bar { animation: progress 7s linear forwards; }
+        @keyframes progress { from { width: 100%; } to { width: 0%; } }
+        .event-card:hover { transform: scale(1.01); background: #222226; border-color: #ff0000; }
+        .event-card.goal { border-left-color: #ff0000; }
+        .event-card.penalty { border-left-color: #ffffff; }
+
+        .ev-time { font-weight: 900; color: #ff0000; width: 45px; font-size: 18px; }
         .penalty .ev-time { color: white; }
-        .ev-info { flex: 1; padding-left: 15px; }
-        .ev-player { display: block; font-size: 15px; font-weight: 700; text-transform: uppercase; }
-        .ev-detail { font-size: 12px; color: #666; font-style: italic; }
-        .ev-badge { font-size: 9px; font-weight: 800; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; color: #555; text-transform: uppercase; }
-        #status-msg { font-size: 10px; color: #444; margin-top: 10px; font-family: monospace; }
-        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #ff0000; }
-        input:checked + .slider:before { transform: translateX(20px); }
+        .ev-info { flex-grow: 1; padding-left: 15px; }
+        .ev-player { font-weight: 700; font-size: 16px; display: block; text-transform: uppercase; }
+        .ev-detail { font-size: 12px; color: #888; font-style: italic; }
+        .ev-trigger { opacity: 0.3; font-size: 18px; }
+        .event-card:hover .ev-trigger { opacity: 1; }
     </style>
 </head>
 <body>
 
-    <nav>
-        <a href="admin.html">Manuelle Steuerung</a>
-        <a href="management.html">Spielerliste</a>
-        <a href="settings.html">Einstellungen</a>
-    </nav>
-
-    <div class="game-header">
-        <div class="team-info"><span>Heim</span><b id="homeName">---</b></div>
-        <div class="score-display" id="liveScore">0:0</div>
-        <div class="team-info"><span>Gast</span><b id="guestName">---</b></div>
+    <div id="container">
+        <div id="card" class="card">
+            <div id="time" class="time-badge">0'</div>
+            <div class="main">
+                <div id="label" class="label">Tor erzielt</div>
+                <div id="player" class="player">-</div>
+                <div id="sub" class="sub">-</div>
+            </div>
+            <div class="progress-bar"></div>
+    <div class="header">
+        <h1 style="font-size:18px; margin:0; letter-spacing:1px;">🤖 AUTO-REGIE</h1>
+        <a href="admin.html" class="back-btn">← ZURÜCK</a>
     </div>
 
-    <div class="setup-area">
-        <input type="number" id="gameIdInput" placeholder="Spiel-ID (z.B. 43426)">
-        <button id="loadBtn" onclick="manualTriggerLoad()">Laden</button>
+    <div class="config-card">
+        <div class="input-group">
+            <input type="text" id="gameId" placeholder="Spiel-ID (5-stellig)">
+            <button id="loadBtn" onclick="manualSync()">ID LADEN</button>
+        </div>
+        <div class="status-bar">
+            <span>Status: <b id="sync-status">Bereit</b></span>
+            <label><input type="checkbox" id="autoToggle"> Auto-Mode</label>
+        </div>
     </div>
+    <div id="timeline"></div>
+    <form>
+        <label for="gameId">Game-ID:</label><br>
+        <input type="text" id="gameId" value="00000"><br>
+        <button onclick="updateGameId()">Submit</button>
+    </form>
+    <form>
+        <input type="checkbox" id="autoToggle" value="toggle" onclick="toggleAutoMode()">
+        <label for="autoToggle">Auto-Mode</label>
+    </form>
+    <p id="sync-status"></p>
 
-    <div class="auto-director">
-        <label style="font-weight:700; color:#888;">🤖 Automatik-Modus</label>
-        <label class="switch">
-            <input type="checkbox" id="autoModeToggle">
-            <span class="slider"></span>
-        </label>
-    </div>
-    <div id="status-msg">System bereit.</div>
-
-    <div class="timeline" id="eventList"></div>
+    <div class="timeline" id="timeline"></div>
 
     <script>
         const firebaseConfig = {
-            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
-            authDomain: "obs-overlay-2950c.firebaseapp.com",
-            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
-            projectId: "obs-overlay-2950c",
-            storageBucket: "obs-overlay-2950c.firebasestorage.app",
-            messagingSenderId: "1094353952185",
-            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
-        };
-        firebase.initializeApp(firebaseConfig);
+@@ -82,163 +77,122 @@
         const db = firebase.database();
 
-        let playersData = null;
-        let lastEventId = null;
-        let activeGameId = null;
+        let activeId = "";
+        let autoMode = false;
+        let lastLength = null;
+        let players = null;
+        let playersDB = null;
+        let lastEventCount = 0;
 
-        async function manualTriggerLoad() {
-            activeGameId = document.getElementById('gameIdInput').value;
-            if(!activeGameId) return;
-            const btn = document.getElementById('loadBtn');
-            btn.disabled = true;
-            btn.innerText = "LÄDT...";
-            await syncSaisonmanager();
-            btn.disabled = false;
-            btn.innerText = "LADEN";
+        // Firebase Listeners
+        db.ref('auto_settings').on('value', snap => {
+            const val = snap.val() || {};
+            activeId = val.gameId || "";
+            autoMode = val.autoMode || false;
+            document.getElementById('gameId').value = activeId;
+            document.getElementById('autoToggle').checked = autoMode;
+            document.getElementById('autoToggle').checked = val.autoMode || false;
+            if(activeId) fetchTimeline();
+        });
+
+        function updateGameId() {
+            const id = document.getElementById('gameId').value;
+            if(id.length !== 5) return alert("Bitte eine gültige Spiel-ID eingeben!");
+            db.ref('auto_settings/gameId').set(id);
+            // Reset Länge damit neue Events vom neuen Spiel getrackt werden
+            lastLength = 0; 
         }
 
-        async function syncSaisonmanager() {
-            if(!activeGameId) return;
-            const targetUrl = `https://saisonmanager.de/api/v2/games/${activeGameId}.json`;
+        function toggleAutoMode() {
+            const mode = document.getElementById('autoToggle').checked;
+            db.ref('auto_settings/autoMode').set(mode);
+        async function manualSync() {
+            activeId = document.getElementById('gameId').value;
+            if(activeId.length !== 5) return alert("ID muss 5-stellig sein.");
+            document.getElementById('loadBtn').disabled = true;
+            document.getElementById('loadBtn').innerText = "LÄDT...";
+            await db.ref('auto_settings/gameId').set(activeId);
+            await fetchTimeline();
+            document.getElementById('loadBtn').disabled = false;
+            document.getElementById('loadBtn').innerText = "ID LADEN";
+        }
+
+        async function fetchTimeline() {
+            if(!activeId) return;
+            const status = document.getElementById('sync-status');
             
-            // Triple-Proxy Strategie für Deployment-Stabilität
-            const proxies = [
-                `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&t=${Date.now()}`,
-                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
-            ];
+            try {
+                const url = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
 
-            let data = null;
-            for (let proxy of proxies) {
-                try {
-                    const res = await fetch(proxy);
-                    if (!res.ok) continue;
-                    const result = await res.json();
-                    // AllOrigins legt Daten in .contents ab, andere Proxies senden direkt
-                    data = result.contents ? JSON.parse(result.contents) : result;
-                    if (data && (data.game || data.events)) break; 
-                } catch (e) { console.warn("Proxy hakt, versuche nächsten..."); }
-            }
-
-            if (!data) {
-                document.getElementById('status-msg').innerText = "FEHLER: Verbindung zum Saisonmanager blockiert.";
-                return;
-            }
-
-            const game = data.game || data;
-            const events = game.events || data.events;
-            playersData = data.players || game.players;
-
-            if (game.home_team) {
-                document.getElementById('homeName').innerText = game.home_team.name;
-                document.getElementById('guestName').innerText = game.guest_team.name;
-                document.getElementById('liveScore').innerText = `${game.result.home_goals}:${game.result.guest_goals}`;
-            }
-
-            const goals = (events.goals || []).map(e => ({...e, type:'goal'}));
-            const pens = (events.penalties || []).map(e => ({...e, type:'penalty'}));
-            const allEvents = [...goals, ...pens].sort((a,b) => b.id - a.id);
-            
-            renderTimeline(allEvents);
-
-            if(document.getElementById('autoModeToggle').checked && allEvents.length > 0) {
-                const latest = allEvents[0];
-                if(lastEventId !== null && latest.id > lastEventId) {
-                    triggerFirebase(latest);
+                let response = null;
+                for (let i = 0; i < 3; i++) {
+                    response = await fetch(url);
+                    if (response.ok) break;
                 }
+
+                // Wir nutzen corsproxy.io um CORS Probleme zu vermeiden
+                const url = `https://corsproxy.io/?https://saisonmanager.de/api/v2/games/${activeId}.json`;
+                const response = await fetch(url);
+                const data = await response.json();
+                players = data.players;
+
+                renderTimeline(data.events);
+                checkAutoTrigger(data.events);
+                
+                playersDB = data.players;
+                const events = data.events;
+
+                document.getElementById('sync-status').innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.style.color = "#00ff00";
+                renderTimeline(events);
+                
+                // Automatik Check
+                if(document.getElementById('autoToggle').checked) {
+                    if(events.length > lastEventCount && lastEventCount !== 0) {
+                        const newEvent = events[events.length - 1];
+                        triggerOverlay(newEvent);
+                    }
+                }
+                lastEventCount = events.length;
+                document.getElementById('sync-status').innerText = "Verbunden (" + new Date().toLocaleTimeString() + ")";
+            } catch (e) {
+                document.getElementById('sync-status').innerText = "Sync Fehler!";
+                console.error("Sync Error:", e);
+                status.innerText = "Sync Fehler! (Eventuell falsche ID?)";
+                status.style.color = "#ff4444";
+                document.getElementById('sync-status').innerText = "Fehler!";
+                console.error(e);
             }
-            if(allEvents.length > 0) lastEventId = allEvents[0].id;
-            document.getElementById('status-msg').innerText = "Sync OK: " + new Date().toLocaleTimeString();
         }
 
         function renderTimeline(events) {
-            const list = document.getElementById('eventList');
-            list.innerHTML = "";
+            const container = document.getElementById('timeline');
+            container.innerHTML = '<h3 style="margin-bottom:15px">Ereignisse des Spiels</h3>';
+            if(events.length === 0) { container.innerHTML += '<div style="color:#555">Noch keine Ereignisse eingetragen.</div>'; return; }
+
+            container.innerHTML = "";
+            let lastPeriod = 0;
+
             events.forEach(ev => {
-                const isGoal = ev.type === 'goal';
-                const teamPlayers = playersData ? playersData[ev.event_team] : [];
-                let pName = "Spieler Nr. " + ev.number;
+                const div = document.createElement('div');
+                div.className = `event-item ${ev.event_type}`;
                 
-                if (teamPlayers) {
-                    const pObj = teamPlayers.find(p => p.trikot_number == ev.number);
-                    if(pObj) pName = `${pObj.player_firstname} ${pObj.player_name}`;
+                const isGoal = ev.event_type == 'goal';
+                const isPenalty = ev.event_type == 'penalty';
+                if (isGoal || isPenalty) {
+                    const teamPlayers = players[ev.event_team];
+                    let detail = "", playerText = "";
+
+                    for (const i in teamPlayers) {
+                        const player = teamPlayers[i]
+                        if (player.trikot_number == ev.number) {
+                            playerText = `${player.player_firstname} ${player.player_name}`;
+                            break;
+                        }
+                    }
+            // Ereignisse umdrehen, damit die neuesten oben stehen
+            const reversedEvents = [...events].reverse();
+
+                    if (isPenalty) {
+                        detail = `${ev.penalty_type_string} - ${ev.penalty_reason_string}`;
+                    }
+                    else if (ev.assist) {
+                        for (const i in teamPlayers) {
+                            const player = teamPlayers[i]
+                            if (player.trikot_number == ev.assist) {
+                                detail = `${player.player_firstname} ${player.player_name}`;
+                                break;
+                            }
+                        }
+                    }
+            reversedEvents.forEach(ev => {
+                if (ev.event_type !== 'goal' && ev.event_type !== 'penalty') return;
+
+                    div.innerHTML = `
+                        <div class="event-time">${ev.time}</div>
+                        <div class="event-info">
+                            <span class="event-player">${playerText}</span>
+                            <span class="event-detail">${detail}</span>
+                        </div>
+                    `;
+
+                    //div.onclick = () => triggerOverlay(ev);
+                    for (let i = lastPeriod+1; i <= ev.period; i++) {
+                        const div2 = document.createElement('div');
+                        div2.innerHTML = `
+                            <span>${i}. Periode</span>
+                        `
+                        container.appendChild(div2);
+                    }
+                    container.appendChild(div);
+                    
+                    lastPeriod = ev.period;
+                }
+            });
+        }
+                const teamPlayers = playersDB[ev.event_team];
+                let pName = "Unbekannt", detail = "";
+
+        function checkAutoTrigger(events) {
+            if (autoMode) {
+                for (let i = lastLength; i < events.length; i++) {
+                    //triggerOverlay(events[i]);
+                // Spieler Namen finden
+                const pObj = teamPlayers.find(p => p.trikot_number == ev.number);
+                if(pObj) pName = `${pObj.player_firstname} ${pObj.player_name}`;
+
+                if(ev.event_type === 'goal') {
+                    if(ev.assist) {
+                        const aObj = teamPlayers.find(p => p.trikot_number == ev.assist);
+                        if(aObj) detail = `Assist: ${aObj.player_name}`;
+                    } else { detail = "Einzelleistung"; }
+                } else {
+                    detail = `${ev.penalty_type_string} (${ev.duration} Min)`;
+                }
+            }
+
+            lastLength = events.length;
+        }
+                // Perioden Header
+                if(ev.period !== lastPeriod) {
+                    const h = document.createElement('div');
+                    h.className = 'period-header';
+                    h.innerText = ev.period + ". Periode";
+                    container.appendChild(h);
                 }
 
-                let detail = isGoal ? (ev.assist ? `Assist: Nr. ${ev.assist}` : "Einzelleistung") : `${ev.duration} Min. - ${ev.penalty_type || 'Strafe'}`;
-                
-                const div = document.createElement('div');
-                div.className = `event-card ${ev.type}`;
-                div.innerHTML = `<div class="ev-time">${ev.game_time}'</div><div class="ev-info"><span class="ev-player">${pName}</span><span class="ev-detail">${detail}</span></div><div class="ev-badge">${ev.type}</div>`;
-                div.onclick = () => triggerFirebase({...ev, pName, detail});
-                list.appendChild(div);
-            });
-        }
-
-        function triggerFirebase(ev) {
+        function triggerOverlay(ev) {
             db.ref('triggered_event').set({
-                data: { type: ev.type, player: ev.pName || "Unbekannt", detail: ev.detail || "", time: ev.game_time + "'" },
+                data: ev,
                 timestamp: Date.now()
+                const card = document.createElement('div');
+                card.className = `event-card ${ev.event_type}`;
+                card.innerHTML = `
+                    <div class="ev-time">${ev.time}</div>
+                    <div class="ev-info">
+                        <span class="ev-player">${pName}</span>
+                        <span class="ev-sub">${detail}</span>
+                    </div>
+                    <div class="ev-trigger">🚀</div>
+                `;
+                
+                // Beim Klick das Overlay triggern
+                card.onclick = () => {
+                    const triggerData = {
+                        type: ev.event_type,
+                        time: ev.time,
+                        player: pName,
+                        detail: detail
+                    };
+                    db.ref('triggered_event').set({
+                        data: triggerData,
+                        timestamp: Date.now()
+                    });
+                };
+                
+                container.appendChild(card);
             });
         }
 
-        setInterval(syncSaisonmanager, 20000);
+        /*let lastTs = 0;
+        db.ref('triggered_event').on('value', snap => {
+            const val = snap.val();
+            if(!val || val.timestamp <= lastTs) return;
+            lastTs = val.timestamp;
+            
+            const ev = val.data;
+            const isGoal = ev.type === 'goal';
+            
+            document.getElementById('time').innerText = ev.game_time + "'";
+            document.getElementById('time').style.color = isGoal ? "#ff0000" : "#ffffff";
+            document.getElementById('label').innerText = isGoal ? "Tor erzielt" : "Zeitstrafe";
+            
+            const p = isGoal ? ev.scorer : ev.player;
+            document.getElementById('player').innerText = p.firstname + " " + p.lastname;
+            document.getElementById('sub').innerText = isGoal ? (ev.assist ? "Assist: " + ev.assist.firstname + " " + ev.assist.lastname : "") : (ev.duration + " Min - " + ev.penalty_type);
+
+            const card = document.getElementById('card');
+            card.classList.add('active');
+            setTimeout(() => card.classList.remove('active'), 7000);
+        });*/
+
+        setInterval(fetchTimeline, 5000);
+        setInterval(fetchTimeline, 10000); // Alle 10 Sek
     </script>
 </body>
 </html>
