@@ -2,184 +2,157 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Pro Broadcast - FIFA Style</title>
+    <title>Floorball Elite Broadcast - FIFA Style</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         
-        body { 
-            margin: 0; padding: 0; overflow: hidden; 
-            font-family: 'Inter', sans-serif; background: transparent; 
-        }
+        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: transparent; }
 
-        /* Haupt-Container am unteren Rand */
         #viewport {
             position: absolute;
-            bottom: 8%; 
-            left: 50%;
+            bottom: 8%; left: 50%;
             transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 1400px;
-            height: 180px;
+            width: 1200px; height: 120px;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* Der animierte "Revealer" Rahmen */
-        .graphic-container {
-            position: relative;
+        /* Die gesamte Einheit */
+        .graphic-unit {
             display: flex;
             align-items: center;
             opacity: 0;
-            transform: scaleX(0.8);
+            transform: scale(0.95);
             transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
             visibility: hidden;
         }
+        #viewport.active .graphic-unit { opacity: 1; transform: scale(1); visibility: visible; }
 
-        #viewport.active .graphic-container {
-            opacity: 1;
-            transform: scaleX(1);
-            visibility: visible;
-        }
-
-        /* Schräger Hintergrund-Block (Parallelogramm) */
-        .bg-shape {
-            position: absolute;
-            height: 90px;
-            background: linear-gradient(135deg, rgba(15,15,15,0.98) 0%, rgba(5,5,5,0.95) 100%);
-            backdrop-filter: blur(20px);
-            transform: skewX(-15deg);
-            border-left: 6px solid #e60000;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
-            width: 0;
-            transition: width 0.6s 0.1s cubic-bezier(0.2, 1, 0.3, 1);
-            z-index: 1;
-        }
-        #viewport.active .bg-shape { width: 850px; }
-
-        /* Der farbige Info-Tag (TOR / STRAFE) */
-        .info-tag {
+        /* Links: Roter Status-Tag (TOR / STRAFE) */
+        .tag-container {
             position: relative;
-            z-index: 5;
-            height: 90px;
-            width: 0;
+            height: 80px; width: 0; /* Start */
             background: #e60000;
             transform: skewX(-15deg);
-            display: flex;
-            align-items: center;
-            justify-content: center;
             overflow: hidden;
-            transition: width 0.5s 0s cubic-bezier(0.2, 1, 0.3, 1);
+            z-index: 10;
+            transition: width 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            display: flex; align-items: center; justify-content: center;
         }
-        #viewport.active .info-tag { width: 140px; }
+        #viewport.active .tag-container { width: 140px; }
 
         .tag-text {
             transform: skewX(15deg) translateY(100%);
-            color: #fff;
-            font-weight: 900;
-            font-size: 22px;
-            text-transform: uppercase;
+            color: #fff; font-weight: 900; font-size: 20px; text-transform: uppercase;
             transition: transform 0.5s 0.4s cubic-bezier(0.2, 1, 0.3, 1);
         }
         #viewport.active .tag-text { transform: skewX(15deg) translateY(0); }
 
-        /* Text-Ebene mit Maskierung */
-        .content-layer {
+        /* Rechts: Haupt-Datenbox */
+        .data-box {
             position: relative;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            padding-left: 40px;
-            white-space: nowrap;
+            height: 80px; width: 0; /* Start */
+            background: rgba(15, 15, 15, 0.98);
+            backdrop-filter: blur(20px);
+            transform: skewX(-15deg);
+            margin-left: -10px; /* Schmiegt sich an den Tag an */
+            border-right: 6px solid #e60000;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.6);
             overflow: hidden;
+            transition: width 0.6s 0.1s cubic-bezier(0.2, 1, 0.3, 1);
         }
+        #viewport.active .data-box { width: 800px; }
 
-        .name-wrapper {
+        /* Innen-Inhalt (muss Skew zurückrechnen!) */
+        .inner-content {
+            transform: skewX(15deg);
+            height: 100%;
+            display: flex; align-items: center;
+            padding: 0 40px 0 30px; /* Genug Abstand wegen der Schräge */
+            opacity: 0;
+            transition: opacity 0.4s 0.6s;
+        }
+        #viewport.active .inner-content { opacity: 1; }
+
+        /* Maskierte Namen-Animation */
+        .name-reveal {
             overflow: hidden;
-            height: 50px;
-            display: flex;
-            align-items: center;
+            flex-grow: 1;
+            max-width: 450px;
         }
-
         .player-name {
-            font-size: 42px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: -1.5px;
-            color: #fff;
+            font-size: 36px; font-weight: 900; text-transform: uppercase;
+            color: #fff; letter-spacing: -1px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             transform: translateY(110%);
             transition: transform 0.6s 0.5s cubic-bezier(0.2, 1, 0.3, 1);
         }
         #viewport.active .player-name { transform: translateY(0); }
 
-        .detail-wrapper {
-            margin-left: 30px;
+        /* Assist / Detail Animation */
+        .detail-reveal {
+            margin-left: 20px;
             overflow: hidden;
-            height: 30px;
+            max-width: 200px;
         }
-
         .detail-text {
-            font-size: 18px;
-            color: #aaa;
-            text-transform: uppercase;
-            font-weight: 700;
-            letter-spacing: 2px;
+            font-size: 16px; color: #888; font-weight: 700; text-transform: uppercase;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             transform: translateY(110%);
             transition: transform 0.6s 0.7s cubic-bezier(0.2, 1, 0.3, 1);
         }
         #viewport.active .detail-text { transform: translateY(0); }
 
-        /* Zeit-Anzeige Badge */
-        .time-badge {
-            margin-left: 40px;
-            font-size: 48px;
-            font-weight: 900;
-            color: #e60000;
-            opacity: 0;
-            transform: scale(0.5);
+        /* Zeit Minute */
+        .time-reveal {
+            margin-left: auto;
+            overflow: hidden;
+        }
+        .time-text {
+            font-size: 42px; font-weight: 900; color: #e60000;
+            transform: scale(0.5); opacity: 0;
             transition: all 0.5s 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.28);
         }
-        #viewport.active .time-badge { opacity: 1; transform: scale(1); }
+        #viewport.active .time-text { transform: scale(1); opacity: 1; }
 
-        /* Glanz-Effekt Animation (Shimmer) */
+        /* Shimmer Glanz */
         .shimmer {
             position: absolute;
             top: 0; left: -100%;
             width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            z-index: 10;
-            transform: skewX(-15deg);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+            transition: 0s;
         }
         #viewport.active .shimmer {
             left: 200%;
-            transition: 1.5s 1s ease-in-out;
+            transition: 1.5s 0.8s ease-in-out;
         }
     </style>
 </head>
 <body>
 
     <div id="viewport">
-        <div class="graphic-container">
-            <!-- Roter Label Block -->
-            <div id="tag-bg" class="info-tag">
+        <div class="graphic-unit">
+            <!-- Roter Label Tag -->
+            <div id="tag-bg" class="tag-container">
                 <div id="tag-text" class="tag-text">GOAL</div>
             </div>
 
-            <!-- Haupt-Hintergrund -->
-            <div class="bg-shape">
+            <!-- Haupt-Datenbox -->
+            <div class="data-box">
                 <div class="shimmer"></div>
-            </div>
-
-            <!-- Inhalts-Texte -->
-            <div class="content-layer">
-                <div class="name-wrapper">
-                    <div id="player" class="player-name">---</div>
+                <div class="inner-content">
+                    <div class="name-reveal">
+                        <div id="player" class="player-name">---</div>
+                    </div>
+                    <div class="detail-reveal">
+                        <div id="detail" class="detail-text">---</div>
+                    </div>
+                    <div class="time-reveal">
+                        <div id="time" class="time-text">0'</div>
+                    </div>
                 </div>
-                <div class="detail-wrapper">
-                    <div id="detail" class="detail-text">---</div>
-                </div>
-                <div id="time" class="time-badge">0'</div>
             </div>
         </div>
     </div>
@@ -208,7 +181,7 @@
             const ev = val.data;
             const isGoal = ev.type === 'goal';
 
-            // UI anpassen
+            // UI Inhalte setzen
             document.getElementById('tag-text').innerText = isGoal ? "GOAL" : "PENALTY";
             document.getElementById('tag-bg').style.background = isGoal ? "#e60000" : "#ffffff";
             document.getElementById('tag-text').style.color = isGoal ? "#ffffff" : "#000000";
@@ -217,15 +190,12 @@
             document.getElementById('detail').innerText = ev.detail;
             document.getElementById('time').innerText = ev.time;
 
-            // Animation Sequenz starten
+            // Animation Sequenz resetten & starten
             viewport.classList.remove('active');
-            void viewport.offsetWidth; // DOM Refresh
+            void viewport.offsetWidth; 
             viewport.classList.add('active');
 
-            // Nach 7 Sekunden ausblenden
-            setTimeout(() => {
-                viewport.classList.remove('active');
-            }, 7000);
+            setTimeout(() => { viewport.classList.remove('active'); }, 7000);
         });
     </script>
 </body>
