@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Elite Overlay</title>
+    <title>Floorball Elite Broadcast</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
@@ -13,148 +13,127 @@
             font-family: 'Inter', sans-serif; background: transparent; 
         }
 
-        /* Haupt-Container: Position 7/8 unten */
+        /* Haupt-Positionierung (7/8 unten) */
         #viewport {
             position: absolute;
             bottom: 12%; 
             left: 50%;
             transform: translateX(-50%);
-            width: 1000px;
-            height: 150px;
             display: flex;
+            align-items: center;
             justify-content: center;
-            align-items: center;
-            overflow: hidden; /* Maske für den Reveal */
+            width: 1200px;
+            height: 120px;
+            overflow: hidden; /* Die Maske für die Animation */
         }
 
-        /* Der Hintergrund-Layer */
-        #main-card {
-            position: relative;
-            background: rgba(20, 20, 25, 0.95); /* Dunkles Anthrazit, kein reines Schwarz */
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            align-items: center;
-            padding: 0;
-            height: 100px;
-            width: 0; /* Startzustand */
-            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
-            transition: width 0.7s cubic-bezier(0.8, 0, 0.1, 1);
-        }
-
-        /* Rote Akzent-Linie */
-        #accent-bar {
-            width: 8px;
-            height: 100%;
+        /* Der linke, farbige Block (Status: TOR / STRAFE) */
+        #type-block {
+            width: 0; /* Start bei 0 */
+            height: 80px;
             background: #ff0000;
-            transform: scaleY(0);
-            transition: transform 0.4s 0.4s cubic-bezier(0.8, 0, 0.1, 1);
-        }
-
-        /* Inhalts-Container mit Maskierung */
-        #content {
             display: flex;
             align-items: center;
-            opacity: 0;
-            transform: translateX(-20px);
+            justify-content: center;
+            transition: width 0.5s cubic-bezier(0.8, 0, 0.2, 1);
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        #type-text {
+            color: #ffffff; /* Knallweiß auf Rot */
+            font-weight: 900;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             white-space: nowrap;
-            padding-left: 30px;
-            padding-right: 40px;
-            transition: all 0.5s 0.6s ease-out;
         }
 
-        /* Zeit-Box (Minute) */
-        .time-box {
-            font-size: 45px;
-            font-weight: 900;
-            color: #ff0000;
-            margin-right: 30px;
-            padding-right: 25px;
-            border-right: 2px solid rgba(255,255,255,0.1);
-            min-width: 70px;
-            text-align: center;
-        }
-
-        .info-text {
+        /* Der rechte, dunkle Block (Name & Assist) */
+        #name-block {
+            width: 0; /* Start bei 0 */
+            height: 80px;
+            background: rgba(15, 15, 15, 0.98); /* Sehr dunkles Grau (fast Schwarz) */
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            transition: width 0.6s 0.1s cubic-bezier(0.8, 0, 0.2, 1);
+            overflow: hidden;
+            border-left: 2px solid rgba(255,255,255,0.1);
         }
 
-        .label {
-            font-size: 13px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            color: #ff0000; /* Leuchtendes Rot */
-            margin-bottom: 2px;
+        /* Content-Reveal innerhalb des dunklen Blocks */
+        #content-reveal {
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.5s 0.6s ease-out;
+            white-space: nowrap;
         }
 
+        /* Texte im dunklen Block */
         .player-name {
-            font-size: 36px;
+            color: #ffffff !important; /* IMMER WEISS */
+            font-size: 34px;
             font-weight: 900;
             text-transform: uppercase;
-            color: #ffffff; /* Weiß auf Dunkelgrau = Maximaler Kontrast */
-            line-height: 1;
             letter-spacing: -1px;
+            line-height: 1;
+            margin-right: 25px;
         }
 
-        .detail-text {
+        .sub-info {
+            color: #aaaaaa !important; /* HELLGRAU für Assist */
             font-size: 18px;
-            color: rgba(255, 255, 255, 0.6);
+            font-weight: 400;
             font-style: italic;
-            margin-top: 4px;
+        }
+
+        /* Minute (ganz rechts) */
+        #time-box {
+            margin-left: auto;
+            color: #ff0000 !important;
+            font-weight: 900;
+            font-size: 38px;
+            padding-left: 25px;
+            border-left: 2px solid rgba(255,255,255,0.1);
         }
 
         /* --- ANIMATION TRIGGER --- */
-        #viewport.active #main-card { width: 750px; }
-        #viewport.active #accent-bar { transform: scaleY(1); }
-        #viewport.active #content { opacity: 1; transform: translateX(0); }
+        #viewport.active #type-block { width: 140px; }
+        #viewport.active #name-block { width: 700px; }
+        #viewport.active #content-reveal { opacity: 1; transform: translateX(0); }
 
-        /* Timer-Balken oben drauf */
-        #timer-line {
+        /* Timer Balken unten drunter */
+        #progress-line {
             position: absolute;
-            top: 0; left: 0;
-            height: 3px;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 4px;
             background: #ff0000;
-            width: 0%;
+            transition: width 0.5s 0.2s;
         }
-        #viewport.active #timer-line {
-            animation: timer-run 7s linear forwards;
-        }
+        #viewport.active #progress-line { width: 840px; } /* Summe aus beiden Blöcken */
 
-        @keyframes timer-run { from { width: 100%; } to { width: 0%; } }
-
-        /* Glanz-Effekt */
-        .shimmer {
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            transition: 0s;
-        }
-        #viewport.active .shimmer {
-            left: 100%;
-            transition: 1.5s 0.8s ease-in-out;
-        }
     </style>
 </head>
 <body>
 
     <div id="viewport">
-        <div id="main-card">
-            <div id="accent-bar"></div>
-            <div id="timer-line"></div>
-            <div class="shimmer"></div>
-            
-            <div id="content">
-                <div id="time" class="time-box">0'</div>
-                <div class="info-text">
-                    <div id="label" class="label">Tor erzielt</div>
-                    <div id="player" class="player-name">-</div>
-                    <div id="detail" class="detail-text">-</div>
-                </div>
+        <div id="type-block">
+            <div id="type-text">TOR</div>
+        </div>
+        <div id="name-block">
+            <div id="content-reveal">
+                <div id="player" class="player-name">NAME DES SPIELERS</div>
+                <div id="sub" class="sub-info">Assist: Name</div>
+                <div id="time" class="time-box">12'</div>
             </div>
         </div>
+        <div id="progress-line"></div>
     </div>
 
     <script>
@@ -171,31 +150,30 @@
         const db = firebase.database();
         const viewport = document.getElementById('viewport');
 
-        let lastEventTs = 0;
+        let lastTs = 0;
 
         db.ref('triggered_event').on('value', snap => {
             const val = snap.val();
-            if(!val || val.timestamp <= lastEventTs) return;
-            lastEventTs = val.timestamp;
+            if(!val || val.timestamp <= lastTs) return;
+            lastTs = val.timestamp;
             
             const ev = val.data;
             const isGoal = ev.type === 'goal';
 
-            // UI Texte setzen
-            document.getElementById('label').innerText = isGoal ? "Tor erzielt" : "Zeitstrafe";
-            document.getElementById('label').style.color = isGoal ? "#ff0000" : "#ffffff";
-            document.getElementById('accent-bar').style.background = isGoal ? "#ff0000" : "#ffffff";
-            document.getElementById('time').innerText = ev.time;
-            document.getElementById('time').style.color = isGoal ? "#ff0000" : "#ffffff";
+            // UI anpassen
+            document.getElementById('type-text').innerText = isGoal ? "TOR" : "STRAFE";
+            document.getElementById('type-block').style.background = isGoal ? "#ff0000" : "#ffffff";
+            document.getElementById('type-text').style.color = isGoal ? "#ffffff" : "#000000"; // Schwarz nur AUF dem weißen Straf-Block
+            
             document.getElementById('player').innerText = ev.player;
-            document.getElementById('detail').innerText = ev.detail;
+            document.getElementById('sub').innerText = ev.detail;
+            document.getElementById('time').innerText = ev.time;
 
             // Animation Sequenz
             viewport.classList.remove('active');
-            void viewport.offsetWidth; // Force Reflow
+            void viewport.offsetWidth; // Trigger CSS Restart
             viewport.classList.add('active');
 
-            // Nach 7 Sekunden wieder ausblenden
             setTimeout(() => {
                 viewport.classList.remove('active');
             }, 7000);
