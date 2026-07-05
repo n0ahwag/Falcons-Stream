@@ -70,7 +70,141 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let lastTs = 0;
+        let etag = "";
+        let activeId = "";
+        let autoMode = false;
+        let lastLength = null;
+
+        db.ref('auto_settings').on('value', snap => {
+            const val = snap.val() || {};
+            activeId = val.gameId || "";
+            autoMode = val.autoMode || false;
+            document.getElementById('gameId').value = activeId;
+            document.getElementById('autoToggle').checked = autoMode;
+            if(activeId) fetchTimeline();
+        });
+
+        function updateGameId() {
+            const id = document.getElementById('gameId').value;
+            if(id.length < 3) return alert("Bitte eine gültige Spiel-ID eingeben!");
+            db.ref('auto_settings/gameId').set(id);
+            // Reset Länge damit neue Events vom neuen Spiel getrackt werden
+            lastLength = 0; 
+        }
+
+        function toggleAutoMode() {
+            const mode = document.getElementById('autoToggle').checked;
+            db.ref('auto_settings/autoMode').set(mode);
+        }
+
+        async function fetchTimeline() {
+            if(!activeId) return;
+            const status = document.getElementById('sync-status');
+            
+            try {
+                const url = `https://saisonmanager.de/api/v2/games/${activeId}.json`;
+
+                let response = null;
+                for (let i = 0; i < 3; i++) {
+                    if (!etag) {
+                        response = await fetch(url);
+                    } else {
+                        // Übers etag können wir eine 304 Anwort bekommen
+                        response = await fetch(url, {headers: {"If-None-Match": etag}});
+                    }
+                    if (response.ok) break;
+                }
+                
+                try {
+                    etag = response.headers.get("etag");
+                } catch (e) {}
+                
+                // 304 steht für keine neue Änderungen
+                if (response.status == 304) return;
+
+                const data = await response.json();
+
+                renderTimeline(data.events);
+                checkAutoTrigger(data.events);
+
+                document.getElementById('sync-status').innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.innerText = "Letzter Sync: " + new Date().toLocaleTimeString();
+                status.style.color = "#00ff00";
+            } catch (e) {
+                document.getElementById('sync-status').innerText = "Sync Fehler!";
+                console.error("Sync Error:", e);
+                status.innerText = "Sync Fehler! (Eventuell falsche ID?)";
+                status.style.color = "#ff4444";
+            }
+        }
+
+        function renderTimeline(events) {
+            const container = document.getElementById('timeline');
+            container.innerHTML = '<h3 style="margin-bottom:15px">Ereignisse des Spiels</h3>';
+            if(events.length === 0) { container.innerHTML += '<div style="color:#555">Noch keine Ereignisse eingetragen.</div>'; return; }
+
+            events.forEach(ev => {
+                const div = document.createElement('div');
+                div.className = `event-item ${ev.type}`;
+                
+                const isGoal = ev.type == 'goal';
+                const isPenalty = ev.type == 'penalty';
+                if (isGoal || isPenalty) {
+                    const players = ev.players[ev.event_team];
+                    let detail = "", playerText = "";
+
+                    for (const player in players) {
+                        if (player.trikot_number == ev.number) {
+                            playerText = `${player.player_firstname} ${player.player_name}`;
+                            break;
+                        }
+                    }
+
+                    if (isPenalty) {
+                        detail = `${ev.duration} Min - ${ev.penalty_type}`;
+                    }
+                    else if (ev.assist) {
+                        for (const player in players) {
+                            if (player.trikot_number == ev.assist) {
+                                detail = `${player.player_firstname} ${player.player_name}`;
+                                break;
+                            }
+                        }
+                    }
+
+                    div.innerHTML = `
+                        <div class="event-time">${ev.game_time}</div>
+                        <div class="event-info">
+                            <span class="event-player">${player}</span>
+                            <span class="event-detail">${detail}</span>
+                        </div>
+                        <div class="trigger-icon">🚀</div>
+                    `;
+
+                    div.onclick = () => triggerOverlay(ev);
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        function checkAutoTrigger(events) {
+            if (autoMode) {
+                for (let i = lastLength; i < events.length; i++) {
+                    triggerOverlay(events[i]);
+                }
+            }
+
+            lastLength = events.length;
+        }
+
+        function triggerOverlay(ev) {
+            db.ref('triggered_event').set({
+                data: ev,
+                timestamp: Date.now()
+            });
+        }
+
+        /*let lastTs = 0;
         db.ref('triggered_event').on('value', snap => {
             const val = snap.val();
             if(!val || val.timestamp <= lastTs) return;
@@ -90,7 +224,9 @@
             const card = document.getElementById('card');
             card.classList.add('active');
             setTimeout(() => card.classList.remove('active'), 7000);
-        });
+        });*/
+
+        setInterval(fetchTimeline, 1000);
     </script>
 </body>
 </html>

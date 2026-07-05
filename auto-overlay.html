@@ -81,6 +81,59 @@
             lastShown = val.timestamp;
             showEvent(val.data);
         });
+        
+        /*let etag = null;
+        let lastLength = 0;
+        let gameId = null;
+
+        db.ref('active_game_id').on('value', snap => {
+            gameId = snap.val();
+            console.log("Tracking Game ID:", gameId);
+        });
+
+        async function checkSaisonmanager() {
+            if (!gameId) return;
+
+            try {
+                // Proxy um CORS zu umgehen
+                const url = `https://saisonmanager.de/api/v2/games/${gameId}.json`;
+                
+                // Mehrere Versuche falls die erste Request nicht durchgeht
+                let response = null;
+                for (let i = 0; i < 3; i++) {
+                    if (!etag) {
+                        response = await fetch(url);
+                    } else {
+                        // Übers etag können wir eine 304 Anwort bekommen
+                        response = await fetch(url, {headers: {"If-None-Match": etag}});
+                    }
+                    if (response.ok) break;
+                }
+
+                try {
+                    etag = response.headers.get("etag");
+                } catch (e) {}
+                
+                // 304 steht für keine neue Änderungen
+                if (response.status == 304) return;
+
+                const data = await response.json();
+                
+                // Alle Events
+                const events = data.events;
+
+                if (events.length > lastLength) {
+                    for (let i = lastLength; i < events.length; i++) {
+                        const ev = events[i];
+
+                        showEvent(ev);
+                    }
+                    lastLength = events.length;
+                }
+            } catch (e) {
+                console.error("API Fehler:", e);
+            }
+        }
 
         function showEvent(ev) {
             const isGoal = ev.type === 'goal';
@@ -99,6 +152,9 @@
             card.classList.add('active');
             setTimeout(() => card.classList.remove('active'), 7000);
         }
+        
+        // Jede Sekunde prüfen
+        setInterval(checkSaisonmanager, 1000);*/
     </script>
 </body>
 </html>
