@@ -8,68 +8,36 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        
         body { font-family: 'Inter', sans-serif; background: #0a0a0b; color: white; margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; }
-
-        /* Navigation Bar */
         nav { width: 100%; background: #141417; padding: 15px 0; border-bottom: 1px solid #2d2d33; display: flex; justify-content: center; gap: 20px; position: sticky; top: 0; z-index: 100; }
-        nav a { color: #888; text-decoration: none; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 8px 16px; border-radius: 6px; border: 1px solid transparent; transition: 0.3s; }
+        nav a { color: #888; text-decoration: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 8px 16px; border-radius: 6px; border: 1px solid #333; transition: 0.3s; }
         nav a:hover { border-color: #ff0000; color: #ff0000; }
-
-        /* Game Header Card */
-        .game-header { 
-            width: 90%; max-width: 600px; background: linear-gradient(145deg, #1c1c21, #141417); 
-            margin-top: 30px; padding: 25px; border-radius: 20px; border: 1px solid #2d2d33;
-            display: flex; justify-content: space-between; align-items: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-        }
+        .game-header { width: 90%; max-width: 600px; background: linear-gradient(145deg, #1c1c21, #141417); margin-top: 25px; padding: 25px; border-radius: 20px; border: 1px solid #2d2d33; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
         .team-info { flex: 1; text-align: center; }
-        .team-info span { display: block; font-size: 11px; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 5px; }
-        .team-info b { font-size: 22px; font-weight: 900; }
-        .score-display { font-size: 48px; font-weight: 900; color: #ff0000; padding: 0 30px; text-shadow: 0 0 20px rgba(255,0,0,0.2); }
-
-        /* Setup Area */
-        .setup-area { width: 90%; max-width: 600px; margin-top: 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
-        input { background: #141417; border: 1px solid #2d2d33; border-radius: 10px; padding: 15px; color: white; font-size: 16px; font-weight: 600; outline: none; transition: 0.3s; }
-        input:focus { border-color: #ff0000; box-shadow: 0 0 15px rgba(255,0,0,0.1); }
-        button#loadBtn { background: #ff0000; border: none; border-radius: 10px; color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: 0.3s; }
-        button#loadBtn:disabled { background: #2d2d33; color: #555; }
-
-        /* Auto-Director Toggle */
-        .auto-director { 
-            width: 90%; max-width: 600px; margin-top: 15px; background: #1c1c21; 
-            padding: 15px 25px; border-radius: 15px; border: 1px solid #2d2d33;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .auto-director label { font-weight: 700; font-size: 14px; color: #aaa; }
+        .team-info span { display: block; font-size: 10px; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 5px; }
+        .team-info b { font-size: 18px; font-weight: 900; }
+        .score-display { font-size: 40px; font-weight: 900; color: #ff0000; padding: 0 20px; }
+        .setup-area { width: 90%; max-width: 600px; margin-top: 20px; display: flex; gap: 10px; }
+        input { flex: 1; background: #141417; border: 1px solid #2d2d33; border-radius: 10px; padding: 15px; color: white; font-size: 16px; outline: none; }
+        button#loadBtn { background: #ff0000; border: none; border-radius: 10px; color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; padding: 0 25px; min-width: 120px; }
+        button#loadBtn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .auto-director { width: 90%; max-width: 600px; margin-top: 15px; background: #1c1c21; padding: 15px 25px; border-radius: 15px; border: 1px solid #2d2d33; display: flex; justify-content: space-between; align-items: center; }
+        .timeline { width: 90%; max-width: 600px; margin-top: 30px; padding-bottom: 50px; }
+        .event-card { background: #141417; margin-bottom: 10px; padding: 15px 20px; border-radius: 12px; display: flex; align-items: center; border: 1px solid #2d2d33; cursor: pointer; transition: 0.2s; position: relative; }
+        .event-card:hover { transform: translateX(10px); background: #1c1c21; border-color: #ff0000; }
+        .ev-time { font-size: 18px; font-weight: 900; width: 45px; color: #ff0000; }
+        .penalty .ev-time { color: white; }
+        .ev-info { flex: 1; padding-left: 15px; }
+        .ev-player { display: block; font-size: 15px; font-weight: 700; text-transform: uppercase; }
+        .ev-detail { font-size: 12px; color: #666; font-style: italic; }
+        .ev-badge { font-size: 9px; font-weight: 800; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; color: #555; text-transform: uppercase; }
+        #status-msg { font-size: 10px; color: #444; margin-top: 10px; font-family: monospace; }
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #ff0000; }
         input:checked + .slider:before { transform: translateX(20px); }
-
-        /* Timeline Section */
-        .timeline { width: 90%; max-width: 600px; margin-top: 40px; margin-bottom: 50px; }
-        .section-title { font-size: 11px; font-weight: 800; color: #444; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 20px; text-align: center; }
-
-        .event-card { 
-            background: #141417; margin-bottom: 12px; padding: 18px 25px; border-radius: 16px; 
-            display: flex; align-items: center; border: 1px solid #2d2d33; cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
-        }
-        .event-card:hover { transform: translateX(10px); background: #1c1c21; border-color: #ff0000; }
-        
-        .ev-time { font-size: 20px; font-weight: 900; width: 50px; color: #ff0000; }
-        .penalty .ev-time { color: white; }
-
-        .ev-info { flex: 1; padding-left: 20px; }
-        .ev-player { display: block; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .ev-detail { font-size: 13px; color: #666; font-style: italic; margin-top: 2px; }
-        
-        .ev-badge { font-size: 10px; font-weight: 800; background: rgba(255,0,0,0.1); color: #ff0000; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
-        .penalty .ev-badge { background: rgba(255,255,255,0.1); color: #fff; }
-
-        #status-msg { font-size: 10px; color: #444; margin-top: 15px; font-family: monospace; }
     </style>
 </head>
 <body>
@@ -77,7 +45,7 @@
     <nav>
         <a href="admin.html">Manuelle Steuerung</a>
         <a href="management.html">Spielerliste</a>
-        <a href="help.html">Hilfe</a>
+        <a href="settings.html">Einstellungen</a>
     </nav>
 
     <div class="game-header">
@@ -88,11 +56,11 @@
 
     <div class="setup-area">
         <input type="number" id="gameIdInput" placeholder="Spiel-ID (z.B. 43426)">
-        <button id="loadBtn" onclick="manualTriggerLoad()">ID Laden</button>
+        <button id="loadBtn" onclick="manualTriggerLoad()">Laden</button>
     </div>
 
     <div class="auto-director">
-        <label>🤖 Automatischer Regie-Modus</label>
+        <label style="font-weight:700; color:#888;">🤖 Automatik-Modus</label>
         <label class="switch">
             <input type="checkbox" id="autoModeToggle">
             <span class="slider"></span>
@@ -100,10 +68,7 @@
     </div>
     <div id="status-msg">System bereit.</div>
 
-    <div class="timeline">
-        <div class="section-title">Timeline & Trigger</div>
-        <div id="eventList"></div>
-    </div>
+    <div class="timeline" id="eventList"></div>
 
     <script>
         const firebaseConfig = {
@@ -127,106 +92,97 @@
             if(!activeGameId) return;
             const btn = document.getElementById('loadBtn');
             btn.disabled = true;
-            btn.innerText = "...";
+            btn.innerText = "LÄDT...";
             await syncSaisonmanager();
             btn.disabled = false;
-            btn.innerText = "ID LADEN";
+            btn.innerText = "LADEN";
         }
 
         async function syncSaisonmanager() {
             if(!activeGameId) return;
-            const url = `https://saisonmanager.de/api/v2/games/${activeGameId}.json`;
-            const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}&t=${Date.now()}`;
+            const targetUrl = `https://saisonmanager.de/api/v2/games/${activeGameId}.json`;
+            
+            // Triple-Proxy Strategie für Deployment-Stabilität
+            const proxies = [
+                `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}&t=${Date.now()}`,
+                `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+            ];
 
-            try {
-                const res = await fetch(proxy);
-                const result = await res.json();
-                const data = JSON.parse(result.contents);
+            let data = null;
+            for (let proxy of proxies) {
+                try {
+                    const res = await fetch(proxy);
+                    if (!res.ok) continue;
+                    const result = await res.json();
+                    // AllOrigins legt Daten in .contents ab, andere Proxies senden direkt
+                    data = result.contents ? JSON.parse(result.contents) : result;
+                    if (data && (data.game || data.events)) break; 
+                } catch (e) { console.warn("Proxy hakt, versuche nächsten..."); }
+            }
 
-                playersData = data.players;
-                const game = data.game;
-                const events = game.events;
+            if (!data) {
+                document.getElementById('status-msg').innerText = "FEHLER: Verbindung zum Saisonmanager blockiert.";
+                return;
+            }
 
-                // Header Update
+            const game = data.game || data;
+            const events = game.events || data.events;
+            playersData = data.players || game.players;
+
+            if (game.home_team) {
                 document.getElementById('homeName').innerText = game.home_team.name;
                 document.getElementById('guestName').innerText = game.guest_team.name;
                 document.getElementById('liveScore').innerText = `${game.result.home_goals}:${game.result.guest_goals}`;
-
-                // Timeline aufbereiten
-                const goals = (events.goals || []).map(e => ({...e, type:'goal'}));
-                const pens = (events.penalties || []).map(e => ({...e, type:'penalty'}));
-                const allEvents = [...goals, ...pens].sort((a,b) => b.id - a.id);
-                
-                renderTimeline(allEvents);
-
-                // Auto-Mode Logik
-                if(document.getElementById('autoModeToggle').checked && allEvents.length > 0) {
-                    const latest = allEvents[0];
-                    if(lastEventId !== null && latest.id > lastEventId) {
-                        triggerFirebase(latest);
-                    }
-                }
-                if(allEvents.length > 0) lastEventId = allEvents[0].id;
-
-                document.getElementById('status-msg').innerText = "Sync OK: " + new Date().toLocaleTimeString();
-            } catch (e) {
-                document.getElementById('status-msg').innerText = "Sync hakt...";
             }
+
+            const goals = (events.goals || []).map(e => ({...e, type:'goal'}));
+            const pens = (events.penalties || []).map(e => ({...e, type:'penalty'}));
+            const allEvents = [...goals, ...pens].sort((a,b) => b.id - a.id);
+            
+            renderTimeline(allEvents);
+
+            if(document.getElementById('autoModeToggle').checked && allEvents.length > 0) {
+                const latest = allEvents[0];
+                if(lastEventId !== null && latest.id > lastEventId) {
+                    triggerFirebase(latest);
+                }
+            }
+            if(allEvents.length > 0) lastEventId = allEvents[0].id;
+            document.getElementById('status-msg').innerText = "Sync OK: " + new Date().toLocaleTimeString();
         }
 
         function renderTimeline(events) {
             const list = document.getElementById('eventList');
             list.innerHTML = "";
-            
             events.forEach(ev => {
                 const isGoal = ev.type === 'goal';
-                const teamPlayers = playersData[ev.event_team];
+                const teamPlayers = playersData ? playersData[ev.event_team] : [];
+                let pName = "Spieler Nr. " + ev.number;
                 
-                // Namen auflösen
-                let pName = "Unbekannt";
-                const pObj = teamPlayers.find(p => p.trikot_number == ev.number);
-                if(pObj) pName = `${pObj.player_firstname} ${pObj.player_name}`;
-
-                const div = document.createElement('div');
-                div.className = `event-card ${ev.type}`;
-                
-                let detail = "";
-                if(isGoal) {
-                    if(ev.assist) {
-                        const aObj = teamPlayers.find(p => p.trikot_number == ev.assist);
-                        detail = aObj ? `Assist: ${aObj.player_name}` : "Mit Assist";
-                    } else { detail = "Einzelleistung"; }
-                } else {
-                    // FIX: Strafe-Details korrekt auslesen
-                    detail = `${ev.duration} Min. - ${ev.penalty_type || 'Zeitstrafe'}`;
+                if (teamPlayers) {
+                    const pObj = teamPlayers.find(p => p.trikot_number == ev.number);
+                    if(pObj) pName = `${pObj.player_firstname} ${pObj.player_name}`;
                 }
 
-                div.innerHTML = `
-                    <div class="ev-time">${ev.game_time}'</div>
-                    <div class="ev-info">
-                        <span class="ev-player">${pName}</span>
-                        <span class="ev-detail">${detail}</span>
-                    </div>
-                    <div class="ev-badge">${isGoal ? 'Goal' : 'Penalty'}</div>
-                `;
-
+                let detail = isGoal ? (ev.assist ? `Assist: Nr. ${ev.assist}` : "Einzelleistung") : `${ev.duration} Min. - ${ev.penalty_type || 'Strafe'}`;
+                
+                const div = document.createElement('div');
+                div.className = `event-card ${ev.type}`;
+                div.innerHTML = `<div class="ev-time">${ev.game_time}'</div><div class="ev-info"><span class="ev-player">${pName}</span><span class="ev-detail">${detail}</span></div><div class="ev-badge">${ev.type}</div>`;
                 div.onclick = () => triggerFirebase({...ev, pName, detail});
                 list.appendChild(div);
             });
         }
 
         function triggerFirebase(ev) {
-            // Wir senden ein bereinigtes Objekt für das FIFA-Overlay
-            const dataToOverlay = {
-                type: ev.type,
-                player: ev.pName,
-                detail: ev.detail,
-                time: ev.game_time + "'"
-            };
-            db.ref('triggered_event').set({ data: dataToOverlay, timestamp: Date.now() });
+            db.ref('triggered_event').set({
+                data: { type: ev.type, player: ev.pName || "Unbekannt", detail: ev.detail || "", time: ev.game_time + "'" },
+                timestamp: Date.now()
+            });
         }
 
-        setInterval(syncSaisonmanager, 15000);
+        setInterval(syncSaisonmanager, 20000);
     </script>
 </body>
 </html>
