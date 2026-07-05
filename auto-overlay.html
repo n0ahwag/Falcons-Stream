@@ -2,96 +2,158 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Elite Broadcast Overlay</title>
+    <title>Floorball Elite Overlay</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         
-        body { margin: 0; padding: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: transparent; }
+        body { 
+            margin: 0; padding: 0; overflow: hidden; 
+            font-family: 'Inter', sans-serif; background: transparent; 
+        }
 
-        /* Wrapper für Mask-Reveal Logik */
-        #broadcast-wrapper {
+        /* Haupt-Container: Position 7/8 unten */
+        #viewport {
             position: absolute;
             bottom: 12%; 
             left: 50%;
             transform: translateX(-50%);
+            width: 1000px;
+            height: 150px;
             display: flex;
+            justify-content: center;
             align-items: center;
-            overflow: hidden; /* Maske */
+            overflow: hidden; /* Maske für den Reveal */
         }
 
-        /* Der eigentliche Balken */
-        #main-bar {
+        /* Der Hintergrund-Layer */
+        #main-card {
             position: relative;
-            height: 90px;
-            width: 0; /* Start-Breite */
-            background: rgba(10, 10, 10, 0.98);
+            background: rgba(20, 20, 25, 0.95); /* Dunkles Anthrazit, kein reines Schwarz */
             backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             align-items: center;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            transition: width 0.7s cubic-bezier(0.85, 0, 0.15, 1);
-            border-radius: 4px;
+            padding: 0;
+            height: 100px;
+            width: 0; /* Startzustand */
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            transition: width 0.7s cubic-bezier(0.8, 0, 0.1, 1);
         }
 
-        /* Farblicher Streifen links */
-        #accent-stripe {
-            position: absolute;
-            left: 0; top: 0;
-            width: 12px;
+        /* Rote Akzent-Linie */
+        #accent-bar {
+            width: 8px;
             height: 100%;
             background: #ff0000;
             transform: scaleY(0);
-            transition: transform 0.4s 0.3s cubic-bezier(0.85, 0, 0.15, 1);
+            transition: transform 0.4s 0.4s cubic-bezier(0.8, 0, 0.1, 1);
         }
 
-        /* Text-Inhalt mit eigenem Reveal */
-        #content-layer {
-            padding: 0 45px 0 35px;
+        /* Inhalts-Container mit Maskierung */
+        #content {
             display: flex;
             align-items: center;
             opacity: 0;
-            transform: translateX(-30px);
-            transition: all 0.6s 0.5s ease-out;
+            transform: translateX(-20px);
             white-space: nowrap;
+            padding-left: 30px;
+            padding-right: 40px;
+            transition: all 0.5s 0.6s ease-out;
         }
 
-        /* Animation States */
-        #broadcast-wrapper.active #main-bar { width: 620px; }
-        #broadcast-wrapper.active #accent-stripe { transform: scaleY(1); }
-        #broadcast-wrapper.active #content-layer { opacity: 1; transform: translateX(0); }
-
-        /* Text Styles */
+        /* Zeit-Box (Minute) */
         .time-box {
-            font-size: 40px; font-weight: 900; margin-right: 30px;
-            padding-right: 25px; border-right: 2px solid rgba(255,255,255,0.1);
+            font-size: 45px;
+            font-weight: 900;
+            color: #ff0000;
+            margin-right: 30px;
+            padding-right: 25px;
+            border-right: 2px solid rgba(255,255,255,0.1);
+            min-width: 70px;
+            text-align: center;
         }
-        .main-info { display: flex; flex-direction: column; }
-        .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 5px; color: #ff0000; margin-bottom: 2px; }
-        .player-name { font-size: 34px; font-weight: 900; text-transform: uppercase; line-height: 1; }
-        .sub-text { font-size: 16px; color: rgba(255,255,255,0.5); font-style: italic; margin-top: 4px; }
 
-        /* Fortschrittsbalken */
-        #progress { position: absolute; bottom: 0; left: 0; height: 3px; background: #ff0000; width: 0%; }
-        #broadcast-wrapper.active #progress { animation: countdown 7s linear forwards; }
-        @keyframes countdown { from { width: 100%; } to { width: 0%; } }
+        .info-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            color: #ff0000; /* Leuchtendes Rot */
+            margin-bottom: 2px;
+        }
+
+        .player-name {
+            font-size: 36px;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: #ffffff; /* Weiß auf Dunkelgrau = Maximaler Kontrast */
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+
+        .detail-text {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        /* --- ANIMATION TRIGGER --- */
+        #viewport.active #main-card { width: 750px; }
+        #viewport.active #accent-bar { transform: scaleY(1); }
+        #viewport.active #content { opacity: 1; transform: translateX(0); }
+
+        /* Timer-Balken oben drauf */
+        #timer-line {
+            position: absolute;
+            top: 0; left: 0;
+            height: 3px;
+            background: #ff0000;
+            width: 0%;
+        }
+        #viewport.active #timer-line {
+            animation: timer-run 7s linear forwards;
+        }
+
+        @keyframes timer-run { from { width: 100%; } to { width: 0%; } }
+
+        /* Glanz-Effekt */
+        .shimmer {
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            transition: 0s;
+        }
+        #viewport.active .shimmer {
+            left: 100%;
+            transition: 1.5s 0.8s ease-in-out;
+        }
     </style>
 </head>
 <body>
 
-    <div id="broadcast-wrapper">
-        <div id="main-bar">
-            <div id="accent-stripe"></div>
-            <div id="content-layer">
+    <div id="viewport">
+        <div id="main-card">
+            <div id="accent-bar"></div>
+            <div id="timer-line"></div>
+            <div class="shimmer"></div>
+            
+            <div id="content">
                 <div id="time" class="time-box">0'</div>
-                <div class="main-info">
+                <div class="info-text">
                     <div id="label" class="label">Tor erzielt</div>
                     <div id="player" class="player-name">-</div>
-                    <div id="sub" class="sub-text">-</div>
+                    <div id="detail" class="detail-text">-</div>
                 </div>
             </div>
-            <div id="progress"></div>
         </div>
     </div>
 
@@ -107,34 +169,36 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const wrapper = document.getElementById('broadcast-wrapper');
+        const viewport = document.getElementById('viewport');
 
-        let lastTs = 0;
+        let lastEventTs = 0;
 
         db.ref('triggered_event').on('value', snap => {
             const val = snap.val();
-            if(!val || val.timestamp <= lastTs) return;
-            lastTs = val.timestamp;
+            if(!val || val.timestamp <= lastEventTs) return;
+            lastEventTs = val.timestamp;
             
             const ev = val.data;
             const isGoal = ev.type === 'goal';
 
-            // UI anpassen
+            // UI Texte setzen
             document.getElementById('label').innerText = isGoal ? "Tor erzielt" : "Zeitstrafe";
             document.getElementById('label').style.color = isGoal ? "#ff0000" : "#ffffff";
-            document.getElementById('accent-stripe').style.background = isGoal ? "#ff0000" : "#ffffff";
-            document.getElementById('progress').style.background = isGoal ? "#ff0000" : "#ffffff";
+            document.getElementById('accent-bar').style.background = isGoal ? "#ff0000" : "#ffffff";
             document.getElementById('time').innerText = ev.time;
             document.getElementById('time').style.color = isGoal ? "#ff0000" : "#ffffff";
             document.getElementById('player').innerText = ev.player;
-            document.getElementById('sub').innerText = ev.detail;
+            document.getElementById('detail').innerText = ev.detail;
 
             // Animation Sequenz
-            wrapper.classList.remove('active');
-            void wrapper.offsetWidth; // Reflow
-            wrapper.classList.add('active');
+            viewport.classList.remove('active');
+            void viewport.offsetWidth; // Force Reflow
+            viewport.classList.add('active');
 
-            setTimeout(() => wrapper.classList.remove('active'), 7000);
+            // Nach 7 Sekunden wieder ausblenden
+            setTimeout(() => {
+                viewport.classList.remove('active');
+            }, 7000);
         });
     </script>
 </body>
