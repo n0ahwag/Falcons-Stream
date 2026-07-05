@@ -133,28 +133,49 @@
             } catch (e) {
                 console.error("API Fehler:", e);
             }
-        }
+        }*/
 
         function showEvent(ev) {
             const isGoal = ev.type === 'goal';
+            const isPenalty = ev.type == 'penalty';
             document.getElementById('label').innerText = isGoal ? "Tor erzielt" : "Zeitstrafe";
             document.getElementById('accent').style.background = isGoal ? "#ff0000" : "#ffffff";
             document.getElementById('time').innerText = ev.game_time + "'";
             document.getElementById('time').style.color = isGoal ? "#ff0000" : "#ffffff";
             
-            const player = isGoal ? `${ev.scorer.firstname} ${ev.scorer.lastname}` : `${ev.player.firstname} ${ev.player.lastname}`;
-            const sub = isGoal ? (ev.assist ? `Assist: ${ev.assist.firstname} ${ev.assist.lastname}` : "") : `${ev.duration} Min - ${ev.penalty_type}`;
-            
-            document.getElementById('player').innerText = player;
-            document.getElementById('sub').innerText = sub;
+            if (isGoal || isPenalty) {
+                const players = ev.players[ev.event_team];
+                let detail = "", playerText = "";
 
+                for (const player in players) {
+                    if (player.trikot_number == ev.number) {
+                        playerText = `${player.player_firstname} ${player.player_name}`;
+                        break;
+                    }
+                }
+
+                if (isPenalty) {
+                    detail = `${ev.duration} Min - ${ev.penalty_type}`;
+                }
+                else if (ev.assist) {
+                    for (const player in players) {
+                        if (player.trikot_number == ev.assist) {
+                            detail = `${player.player_firstname} ${player.player_name}`;
+                            break;
+                        }
+                    }
+                }
+            
+                document.getElementById('player').innerText = player;
+                document.getElementById('sub').innerText = detail;
+            }
             const card = document.getElementById('card');
             card.classList.add('active');
             setTimeout(() => card.classList.remove('active'), 7000);
         }
         
         // Jede Sekunde prüfen
-        setInterval(checkSaisonmanager, 1000);*/
+        //setInterval(checkSaisonmanager, 1000);
     </script>
 </body>
 </html>

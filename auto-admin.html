@@ -56,11 +56,17 @@
             <div class="progress-bar"></div>
         </div>
     </div>
+    <div id="timeline"></div>
     <form>
-        <label for="fname">Game-ID:</label><br>
-        <input type="text" id="gameid" name="gameid" value="00000"><br>
+        <label for="gameId">Game-ID:</label><br>
+        <input type="text" id="gameId" value="00000"><br>
         <button onclick="updateGameId()">Submit</button>
     </form>
+    <form>
+        <input type="checkbox" id="autoToggle" value="toggle" onclick="toggleAutoMode()">
+        <label for="autoToggle">Auto-Mode</label>
+    </form>
+    <p id="sync-status"></p>
 
     <script>
         const firebaseConfig = {
@@ -75,10 +81,10 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let etag = "";
         let activeId = "";
         let autoMode = false;
         let lastLength = null;
+        let players = null;
 
         db.ref('auto_settings').on('value', snap => {
             const val = snap.val() || {};
@@ -111,23 +117,12 @@
 
                 let response = null;
                 for (let i = 0; i < 3; i++) {
-                    if (!etag) {
-                        response = await fetch(url);
-                    } else {
-                        // Übers etag können wir eine 304 Anwort bekommen
-                        response = await fetch(url, {headers: {"If-None-Match": etag}});
-                    }
+                    response = await fetch(url);
                     if (response.ok) break;
                 }
-                
-                try {
-                    etag = response.headers.get("etag");
-                } catch (e) {}
-                
-                // 304 steht für keine neue Änderungen
-                if (response.status == 304) return;
 
                 const data = await response.json();
+                players = data.players;
 
                 renderTimeline(data.events);
                 checkAutoTrigger(data.events);
@@ -148,17 +143,20 @@
             container.innerHTML = '<h3 style="margin-bottom:15px">Ereignisse des Spiels</h3>';
             if(events.length === 0) { container.innerHTML += '<div style="color:#555">Noch keine Ereignisse eingetragen.</div>'; return; }
 
+            let lastPeriod = 0;
+
             events.forEach(ev => {
                 const div = document.createElement('div');
-                div.className = `event-item ${ev.type}`;
+                div.className = `event-item ${ev.event_type}`;
                 
-                const isGoal = ev.type == 'goal';
-                const isPenalty = ev.type == 'penalty';
+                const isGoal = ev.event_type == 'goal';
+                const isPenalty = ev.event_type == 'penalty';
                 if (isGoal || isPenalty) {
-                    const players = ev.players[ev.event_team];
+                    const teamPlayers = players[ev.event_team];
                     let detail = "", playerText = "";
 
-                    for (const player in players) {
+                    for (const i in teamPlayers) {
+                        const player = teamPlayers[i]
                         if (player.trikot_number == ev.number) {
                             playerText = `${player.player_firstname} ${player.player_name}`;
                             break;
@@ -166,10 +164,11 @@
                     }
 
                     if (isPenalty) {
-                        detail = `${ev.duration} Min - ${ev.penalty_type}`;
+                        detail = `${ev.penalty_type_string} - ${ev.penalty_reason_string}`;
                     }
                     else if (ev.assist) {
-                        for (const player in players) {
+                        for (const i in teamPlayers) {
+                            const player = teamPlayers[i]
                             if (player.trikot_number == ev.assist) {
                                 detail = `${player.player_firstname} ${player.player_name}`;
                                 break;
@@ -178,16 +177,24 @@
                     }
 
                     div.innerHTML = `
-                        <div class="event-time">${ev.game_time}</div>
+                        <div class="event-time">${ev.time}</div>
                         <div class="event-info">
-                            <span class="event-player">${player}</span>
+                            <span class="event-player">${playerText}</span>
                             <span class="event-detail">${detail}</span>
                         </div>
-                        <div class="trigger-icon">🚀</div>
                     `;
 
-                    div.onclick = () => triggerOverlay(ev);
+                    //div.onclick = () => triggerOverlay(ev);
+                    for (let i = lastPeriod+1; i <= ev.period; i++) {
+                        const div2 = document.createElement('div');
+                        div2.innerHTML = `
+                            <span>${i}. Periode</span>
+                        `
+                        container.appendChild(div2);
+                    }
                     container.appendChild(div);
+                    
+                    lastPeriod = ev.period;
                 }
             });
         }
@@ -195,7 +202,7 @@
         function checkAutoTrigger(events) {
             if (autoMode) {
                 for (let i = lastLength; i < events.length; i++) {
-                    triggerOverlay(events[i]);
+                    //triggerOverlay(events[i]);
                 }
             }
 
@@ -231,7 +238,7 @@
             setTimeout(() => card.classList.remove('active'), 7000);
         });*/
 
-        setInterval(fetchTimeline, 1000);
+        setInterval(fetchTimeline, 5000);
     </script>
 </body>
 </html>
