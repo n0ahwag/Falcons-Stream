@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Floorball Elite Broadcast</title>
+    <title>Floorball Pro Broadcast - FIFA Style</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
@@ -13,127 +13,175 @@
             font-family: 'Inter', sans-serif; background: transparent; 
         }
 
-        /* Haupt-Positionierung (7/8 unten) */
+        /* Haupt-Container am unteren Rand */
         #viewport {
             position: absolute;
-            bottom: 12%; 
+            bottom: 8%; 
             left: 50%;
             transform: translateX(-50%);
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 1200px;
-            height: 120px;
-            overflow: hidden; /* Die Maske für die Animation */
+            width: 1400px;
+            height: 180px;
         }
 
-        /* Der linke, farbige Block (Status: TOR / STRAFE) */
-        #type-block {
-            width: 0; /* Start bei 0 */
-            height: 80px;
-            background: #ff0000;
+        /* Der animierte "Revealer" Rahmen */
+        .graphic-container {
+            position: relative;
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: width 0.5s cubic-bezier(0.8, 0, 0.2, 1);
-            overflow: hidden;
-            z-index: 2;
-        }
-
-        #type-text {
-            color: #ffffff; /* Knallweiß auf Rot */
-            font-weight: 900;
-            font-size: 24px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            white-space: nowrap;
-        }
-
-        /* Der rechte, dunkle Block (Name & Assist) */
-        #name-block {
-            width: 0; /* Start bei 0 */
-            height: 80px;
-            background: rgba(15, 15, 15, 0.98); /* Sehr dunkles Grau (fast Schwarz) */
-            display: flex;
-            align-items: center;
-            transition: width 0.6s 0.1s cubic-bezier(0.8, 0, 0.2, 1);
-            overflow: hidden;
-            border-left: 2px solid rgba(255,255,255,0.1);
-        }
-
-        /* Content-Reveal innerhalb des dunklen Blocks */
-        #content-reveal {
-            display: flex;
-            align-items: center;
-            padding: 0 40px;
             opacity: 0;
-            transform: translateX(-30px);
-            transition: all 0.5s 0.6s ease-out;
-            white-space: nowrap;
+            transform: scaleX(0.8);
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+            visibility: hidden;
         }
 
-        /* Texte im dunklen Block */
+        #viewport.active .graphic-container {
+            opacity: 1;
+            transform: scaleX(1);
+            visibility: visible;
+        }
+
+        /* Schräger Hintergrund-Block (Parallelogramm) */
+        .bg-shape {
+            position: absolute;
+            height: 90px;
+            background: linear-gradient(135deg, rgba(15,15,15,0.98) 0%, rgba(5,5,5,0.95) 100%);
+            backdrop-filter: blur(20px);
+            transform: skewX(-15deg);
+            border-left: 6px solid #e60000;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            width: 0;
+            transition: width 0.6s 0.1s cubic-bezier(0.2, 1, 0.3, 1);
+            z-index: 1;
+        }
+        #viewport.active .bg-shape { width: 850px; }
+
+        /* Der farbige Info-Tag (TOR / STRAFE) */
+        .info-tag {
+            position: relative;
+            z-index: 5;
+            height: 90px;
+            width: 0;
+            background: #e60000;
+            transform: skewX(-15deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: width 0.5s 0s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        #viewport.active .info-tag { width: 140px; }
+
+        .tag-text {
+            transform: skewX(15deg) translateY(100%);
+            color: #fff;
+            font-weight: 900;
+            font-size: 22px;
+            text-transform: uppercase;
+            transition: transform 0.5s 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        #viewport.active .tag-text { transform: skewX(15deg) translateY(0); }
+
+        /* Text-Ebene mit Maskierung */
+        .content-layer {
+            position: relative;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            padding-left: 40px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .name-wrapper {
+            overflow: hidden;
+            height: 50px;
+            display: flex;
+            align-items: center;
+        }
+
         .player-name {
-            color: #ffffff !important; /* IMMER WEISS */
-            font-size: 34px;
+            font-size: 42px;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: -1px;
-            line-height: 1;
-            margin-right: 25px;
+            letter-spacing: -1.5px;
+            color: #fff;
+            transform: translateY(110%);
+            transition: transform 0.6s 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        #viewport.active .player-name { transform: translateY(0); }
+
+        .detail-wrapper {
+            margin-left: 30px;
+            overflow: hidden;
+            height: 30px;
         }
 
-        .sub-info {
-            color: #aaaaaa !important; /* HELLGRAU für Assist */
+        .detail-text {
             font-size: 18px;
-            font-weight: 400;
-            font-style: italic;
+            color: #aaa;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 2px;
+            transform: translateY(110%);
+            transition: transform 0.6s 0.7s cubic-bezier(0.2, 1, 0.3, 1);
         }
+        #viewport.active .detail-text { transform: translateY(0); }
 
-        /* Minute (ganz rechts) */
-        #time-box {
-            margin-left: auto;
-            color: #ff0000 !important;
+        /* Zeit-Anzeige Badge */
+        .time-badge {
+            margin-left: 40px;
+            font-size: 48px;
             font-weight: 900;
-            font-size: 38px;
-            padding-left: 25px;
-            border-left: 2px solid rgba(255,255,255,0.1);
+            color: #e60000;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s 0.8s cubic-bezier(0.17, 0.89, 0.32, 1.28);
         }
+        #viewport.active .time-badge { opacity: 1; transform: scale(1); }
 
-        /* --- ANIMATION TRIGGER --- */
-        #viewport.active #type-block { width: 140px; }
-        #viewport.active #name-block { width: 700px; }
-        #viewport.active #content-reveal { opacity: 1; transform: translateX(0); }
-
-        /* Timer Balken unten drunter */
-        #progress-line {
+        /* Glanz-Effekt Animation (Shimmer) */
+        .shimmer {
             position: absolute;
-            bottom: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 4px;
-            background: #ff0000;
-            transition: width 0.5s 0.2s;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            z-index: 10;
+            transform: skewX(-15deg);
         }
-        #viewport.active #progress-line { width: 840px; } /* Summe aus beiden Blöcken */
-
+        #viewport.active .shimmer {
+            left: 200%;
+            transition: 1.5s 1s ease-in-out;
+        }
     </style>
 </head>
 <body>
 
     <div id="viewport">
-        <div id="type-block">
-            <div id="type-text">TOR</div>
-        </div>
-        <div id="name-block">
-            <div id="content-reveal">
-                <div id="player" class="player-name">NAME DES SPIELERS</div>
-                <div id="sub" class="sub-info">Assist: Name</div>
-                <div id="time" class="time-box">12'</div>
+        <div class="graphic-container">
+            <!-- Roter Label Block -->
+            <div id="tag-bg" class="info-tag">
+                <div id="tag-text" class="tag-text">GOAL</div>
+            </div>
+
+            <!-- Haupt-Hintergrund -->
+            <div class="bg-shape">
+                <div class="shimmer"></div>
+            </div>
+
+            <!-- Inhalts-Texte -->
+            <div class="content-layer">
+                <div class="name-wrapper">
+                    <div id="player" class="player-name">---</div>
+                </div>
+                <div class="detail-wrapper">
+                    <div id="detail" class="detail-text">---</div>
+                </div>
+                <div id="time" class="time-badge">0'</div>
             </div>
         </div>
-        <div id="progress-line"></div>
     </div>
 
     <script>
@@ -161,19 +209,20 @@
             const isGoal = ev.type === 'goal';
 
             // UI anpassen
-            document.getElementById('type-text').innerText = isGoal ? "TOR" : "STRAFE";
-            document.getElementById('type-block').style.background = isGoal ? "#ff0000" : "#ffffff";
-            document.getElementById('type-text').style.color = isGoal ? "#ffffff" : "#000000"; // Schwarz nur AUF dem weißen Straf-Block
+            document.getElementById('tag-text').innerText = isGoal ? "GOAL" : "PENALTY";
+            document.getElementById('tag-bg').style.background = isGoal ? "#e60000" : "#ffffff";
+            document.getElementById('tag-text').style.color = isGoal ? "#ffffff" : "#000000";
             
             document.getElementById('player').innerText = ev.player;
-            document.getElementById('sub').innerText = ev.detail;
+            document.getElementById('detail').innerText = ev.detail;
             document.getElementById('time').innerText = ev.time;
 
-            // Animation Sequenz
+            // Animation Sequenz starten
             viewport.classList.remove('active');
-            void viewport.offsetWidth; // Trigger CSS Restart
+            void viewport.offsetWidth; // DOM Refresh
             viewport.classList.add('active');
 
+            // Nach 7 Sekunden ausblenden
             setTimeout(() => {
                 viewport.classList.remove('active');
             }, 7000);
