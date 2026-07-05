@@ -7,94 +7,32 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;900&display=swap');
-        
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: #121212; 
-            color: white; 
-            margin: 0; 
-            padding: 15px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-
-        h1 { font-size: 18px; color: #ff4444; margin: 10px 0 20px 0; text-transform: uppercase; letter-spacing: 2px; }
-
-        .team-select { 
-            width: 100%; max-width: 400px; padding: 15px; 
-            background: #ff4444; border: none; border-radius: 10px; 
-            color: white; font-weight: bold; margin-bottom: 20px; 
-            font-size: 16px; cursor: pointer;
-        }
-
-        .admin-nav { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 8px; width: 100%; max-width: 400px; margin-bottom: 25px; 
-        }
-
-        .nav-btn { 
-            padding: 12px; background: #1e1e1e; border: 1px solid #333; 
-            color: #bbb; text-decoration: none; text-align: center; 
-            border-radius: 8px; font-size: 10px; font-weight: bold; 
-            text-transform: uppercase; transition: 0.3s; 
-        }
-        .nav-btn:hover { border-color: #ff4444; color: #ff4444; }
-
-        .card { 
-            background: #1e1e1e; padding: 20px; border-radius: 12px; 
-            border: 1px solid #333; width: 100%; max-width: 360px; 
-            margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0c0c0e; color: white; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        h1 { font-size: 20px; color: #ff0000; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0 20px 0; }
+        .team-select { width: 100%; max-width: 400px; padding: 15px; background: #ff0000; border: none; border-radius: 10px; color: white; font-weight: bold; margin-bottom: 20px; font-size: 16px; cursor: pointer; }
+        .admin-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; max-width: 400px; margin-bottom: 25px; }
+        .nav-btn { padding: 12px; background: #1a1a1c; border: 1px solid #333; color: #bbb; text-decoration: none; text-align: center; border-radius: 8px; font-size: 10px; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
+        .nav-btn:hover { border-color: #ff0000; color: #ff0000; }
+        .card { background: #161618; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 360px; margin-bottom: 20px; }
         h2 { color: #eee; font-size: 13px; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        
-        /* Quick Actions Sektion */
-        .quick-actions { display: flex; gap: 10px; margin-top: 10px; }
-        .btn-starting { background: #ff4444 !important; flex: 2; }
-        .btn-starting-off { background: #333 !important; flex: 1; }
-
         .input-row { display: flex; gap: 10px; margin-top: 10px; }
-        .nr-field { width: 70px; }
-        input, select { width: 100%; padding: 12px; margin: 5px 0; border-radius: 6px; border: 1px solid #444; background: #252525; color: white; font-size: 14px; outline: none; }
-        
-        .action-btn { width: 100%; padding: 15px; background: #ff4444; border: none; border-radius: 8px; color: white; font-weight: 800; cursor: pointer; margin-top: 10px; text-transform: uppercase; font-size: 13px; }
-        .action-btn:active { transform: scale(0.96); }
+        input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #000; color: white; outline: none; }
+        .nr-field { width: 60px; flex: none; }
+        .action-btn { width: 100%; padding: 15px; background: #ff0000; border: none; border-radius: 8px; color: white; font-weight: 800; cursor: pointer; margin-top: 10px; text-transform: uppercase; }
+        .btn-auto { background: #222; border: 2px solid #ff0000; color: #ff0000; margin-top: 5px; }
     </style>
 </head>
 <body>
-
     <h1>Floorball Control</h1>
-
-    <select id="teamSelector" class="team-select" onchange="updateTeam()">
-        <option value="2bundesliga">2. Bundesliga</option>
-        <option value="regio">Regio</option>
-        <option value="u17">U17</option>
-        <option value="u15">U15</option>
-        <option value="u13">U13</option>
-        <option value="u11">U11</option>
-        <option value="u9">U9</option>
-    </select>
-
+    <select id="teamSelector" class="team-select" onchange="updateTeam()"><option value="2bundesliga">2. Bundesliga</option><option value="regio">Regio</option><option value="u17">U17</option><option value="u15">U15</option><option value="u13">U13</option><option value="u11">U11</option><option value="u9">U9</option></select>
     <div class="admin-nav">
         <a href="management.html" class="nav-btn">👥 Team</a>
         <a href="lineup-admin.html" class="nav-btn">📋 Aufstellung</a>
         <a href="score-admin.html" class="nav-btn">🏆 Score</a>
-        <a href="help.html" class="nav-btn">❓ Hilfe</a>
-        <a href="settings.html" class="nav-btn" style="grid-column: span 2; background: #222;">⚙️ Einstellungen & Hotkeys</a>
+        <a href="settings.html" class="nav-btn">⚙️ Hotkeys</a>
+        <a href="auto-admin.html" class="nav-btn btn-auto" style="grid-column: span 2;">🤖 Auto-Regie (Saisonmanager)</a>
     </div>
-
-    <!-- NEU: QUICK ACTIONS FÜR STARTING SIX -->
-    <div class="card" style="border-color: #ff4444;">
-        <h2>🚀 Regie-Quicklink</h2>
-        <div class="quick-actions">
-            <button class="action-btn btn-starting" onclick="toggleStartingSix(true)">Starting Six EIN</button>
-            <button class="action-btn btn-starting-off" onclick="toggleStartingSix(false)">AUS</button>
-        </div>
-    </div>
-
     <div class="card">
         <h2>⚽ Tor (Heim +1)</h2>
         <div class="input-row">
@@ -105,80 +43,24 @@
             <input type="number" class="nr-field" id="assistNr" placeholder="Nr." oninput="findP(this, 'assistName')">
             <input type="text" id="assistName" placeholder="Assist...">
         </div>
-        <button class="action-btn" onclick="send('goal')">Tor & Score anzeigen</button>
+        <button class="action-btn" onclick="send('goal')">Tor anzeigen</button>
     </div>
-
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
-            authDomain: "obs-overlay-2950c.firebaseapp.com",
-            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
-            projectId: "obs-overlay-2950c",
-            storageBucket: "obs-overlay-2950c.firebasestorage.app",
-            messagingSenderId: "1094353952185",
-            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
+        const firebaseConfig = { apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM", authDomain: "obs-overlay-2950c.firebaseapp.com", databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/", projectId: "obs-overlay-2950c", storageBucket: "obs-overlay-2950c.firebasestorage.app", messagingSenderId: "1094353952185", appId: "1:1094353952185:web:da70794c9e5104fda22a68" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
         let players = {}, currentT = "2bundesliga", curS = {scoreA:0, scoreB:0}, hks = {};
-
         db.ref('scoreboard_active').on('value', s => { curS = s.val() || {scoreA:0, scoreB:0}; });
         db.ref('hotkey_config').on('value', s => { hks = s.val() || {}; });
-
-        function updateTeam() {
-            currentT = document.getElementById('teamSelector').value;
-            db.ref('teams/' + currentT + '/players').on('value', snap => { players = snap.val() || {}; });
-        }
-        function findP(input, target) { document.getElementById(target).value = players[input.value] || ""; }
-
-        // --- STARTING SIX FUNKTION ---
-        function toggleStartingSix(visible) {
-            db.ref('lineup_control').set({
-                activeLine: 1, // Immer Reihe 1
-                visible: visible,
-                team: currentT,
-                timestamp: Date.now()
-            });
-        }
-
+        function updateTeam() { currentT = document.getElementById('teamSelector').value; db.ref('teams/' + currentT + '/players').on('value', snap => { players = snap.val() || {}; }); }
+        function findP(i, t) { document.getElementById(t).value = players[i.value] || ""; }
         function send(type) {
-            let data = { timestamp: Date.now(), type: type };
-            if(type === 'goal') {
-                data.player = document.getElementById('goalName').value;
-                data.assist = document.getElementById('assistName').value;
-                if(!data.player) return;
-                db.ref('scoreboard_active/scoreA').set((curS.scoreA || 0) + 1);
-            }
-            db.ref('lastEvent').set(data);
+            let name = document.getElementById('goalName').value;
+            let assist = document.getElementById('assistName').value;
+            if(!name) return;
+            db.ref('lastEvent').set({ type: 'goal', player: name, assist: assist, timestamp: Date.now() });
+            db.ref('scoreboard_active/scoreA').set((curS.scoreA || 0) + 1);
             document.querySelectorAll('input').forEach(i => i.value = '');
         }
-
-        window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-            if (['Control', 'Shift', 'Alt', 'AltGraph', 'Meta'].includes(e.key)) return null;
-            let c = [];
-            if (e.ctrlKey) c.push('ctrl');
-            if (e.shiftKey) c.push('shift');
-            if (e.altKey) c.push('alt');
-            c.push(e.key.toLowerCase());
-            const pressed = c.join('+');
-
-            Object.keys(hks).forEach(act => {
-                if (hks[act].id === pressed) {
-                    e.preventDefault();
-                    if (act.startsWith('Pen-')) {
-                        let duration = act === 'Pen-2' ? "2'" : act === 'Pen-2-2' ? "2'+2'" : act === 'Pen-10' ? "10'" : "MS";
-                        window.open(`penalty-entry.html?team=${currentT}&dur=${encodeURIComponent(duration)}`, 'strafePopup', 'width=400,height=550');
-                    } else {
-                        let team = act.includes('A') ? 'scoreA' : 'scoreB';
-                        let mod = act.includes('plus') ? 1 : -1;
-                        db.ref('scoreboard_active/' + team).set(Math.max(0, (curS[team] || 0) + mod));
-                    }
-                }
-            });
-        });
-
         updateTeam();
     </script>
 </body>
