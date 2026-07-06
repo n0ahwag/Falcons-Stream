@@ -29,7 +29,6 @@
             align-items: center; 
         }
 
-        /* Navigation / Header */
         .top-nav {
             width: 100%;
             background: rgba(22, 22, 26, 0.8);
@@ -61,7 +60,6 @@
 
         .back-link:hover { color: var(--primary-red); }
 
-        /* Setup Card */
         .main-container {
             width: 90%;
             max-width: 550px;
@@ -118,7 +116,6 @@
 
         button#loadBtn:disabled { background: #333; color: #666; }
 
-        /* Status & Toggle Area */
         .status-row {
             display: flex;
             justify-content: space-between;
@@ -135,7 +132,6 @@
 
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        /* Switch Style */
         .switch-box { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -144,7 +140,6 @@
         input:checked + .slider { background-color: var(--primary-red); }
         input:checked + .slider:before { transform: translateX(18px); }
 
-        /* Timeline Section */
         .timeline { margin-top: 40px; margin-bottom: 50px; }
         .period-label {
             font-size: 11px;
@@ -231,7 +226,6 @@
     </div>
 
     <script>
-        // FIREBASE KONFIGURATION (Bleibt gleich)
         const firebaseConfig = {
             apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
             authDomain: "obs-overlay-2950c.firebaseapp.com",
@@ -248,7 +242,6 @@
         let playersDB = null;
         let lastEventCount = 0;
 
-        // Firebase Listeners
         db.ref('auto_settings').on('value', snap => {
             const val = snap.val() || {};
             activeId = val.gameId || "";
@@ -280,10 +273,8 @@
 
                 renderTimeline(events);
                 
-                // Automatik Check
                 if(document.getElementById('autoToggle').checked) {
                     if(events.length > lastEventCount && lastEventCount !== 0) {
-                        // Triggert das Overlay für das neueste Event
                         triggerOverlay(events[events.length - 1]);
                     }
                 }
@@ -319,7 +310,8 @@
                         if(aObj) detail = `Assist: ${aObj.player_name}`;
                     } else { detail = "Einzelleistung"; }
                 } else {
-                    detail = `${ev.penalty_type_string} (${ev.duration} Min)`;
+                    // GEÄNDERT: (undefined Min) entfernt
+                    detail = `${ev.penalty_type_string}`; 
                 }
 
                 if(ev.period !== lastPeriod) {
@@ -346,6 +338,7 @@
                 };
                 
                 container.appendChild(card);
+                lastPeriod = ev.period;
             });
         }
 
