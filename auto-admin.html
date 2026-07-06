@@ -19,13 +19,11 @@
         h1 { font-size: 14px; text-transform: uppercase; letter-spacing: 3px; color: var(--primary-red); margin: 0 0 20px 0; }
         .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
         input { flex: 1; background: #000; border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; color: white; font-size: 16px; outline: none; transition: 0.3s; }
-        input:focus { border-color: var(--primary-red); }
         button#loadBtn { background: var(--primary-red); border: none; color: white; border-radius: 10px; padding: 0 20px; font-weight: 800; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .status-row { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 18px; border-radius: 12px; font-size: 13px; }
         .status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-dim); }
         .dot { width: 8px; height: 8px; background: #444; border-radius: 50%; }
         .dot.online { background: #00ff00; box-shadow: 0 0 10px #00ff00; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
         .switch-box { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -36,8 +34,8 @@
         .timeline { margin-top: 40px; margin-bottom: 50px; }
         .period-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: var(--text-dim); margin: 25px 0 15px 0; display: flex; align-items: center; gap: 15px; }
         .period-label::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
-        .event-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; cursor: pointer; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden; }
-        .event-card:hover { transform: translateX(5px); border-color: var(--primary-red); background: #1c1c22; }
+        .event-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .event-card:hover { transform: translateX(5px); border-color: var(--primary-red); }
         .event-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: #444; }
         .event-card.goal::before { background: var(--primary-red); }
         .event-card.penalty::before { background: #fff; }
@@ -46,8 +44,7 @@
         .ev-body { flex: 1; margin-left: 15px; }
         .ev-player { display: block; font-weight: 700; text-transform: uppercase; font-size: 15px; margin-bottom: 2px; }
         .ev-detail { font-size: 12px; color: var(--text-dim); font-style: italic; }
-        .ev-icon { font-size: 18px; opacity: 0.2; transition: 0.3s; }
-        .event-card:hover .ev-icon { opacity: 1; transform: scale(1.2); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -61,42 +58,100 @@
         <div id="timeline" class="timeline"></div>
     </div>
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM", authDomain: "obs-overlay-2950c.firebaseapp.com", databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/", projectId: "obs-overlay-2950c", storageBucket: "obs-overlay-2950c.firebasestorage.app", messagingSenderId: "1094353952185", appId: "1:1094353952185:web:da70794c9e5104fda22a68" };
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
+        const firebaseConfig = {
+            apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
+            authDomain: "obs-overlay-2950c.firebaseapp.com",
+            databaseURL: "https://obs-overlay-2950c-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "obs-overlay-2950c",
+            storageBucket: "obs-overlay-2950c.firebasestorage.app",
+            messagingSenderId: "1094353952185",
+            appId: "1:1094353952185:web:da70794c9e5104fda22a68"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let activeId = "", playersDB = null, lastEventCount = 0;
-        db.ref('auto_settings').on('value', snap => { const val = snap.val() || {}; activeId = val.gameId || ""; document.getElementById('gameId').value = activeId; document.getElementById('autoToggle').checked = val.autoMode || false; if(activeId) fetchTimeline(); });
-        async function manualSync() { activeId = document.getElementById('gameId').value; if(activeId.length < 4) return alert("Bitte gültige ID eingeben."); document.getElementById('loadBtn').disabled = true; document.getElementById('loadBtn').innerText = "..."; await db.ref('auto_settings/gameId').set(activeId); await fetchTimeline(); document.getElementById('loadBtn').disabled = false; document.getElementById('loadBtn').innerText = "Laden"; }
+
+        db.ref('auto_settings').on('value', snap => {
+            const val = snap.val() || {};
+            activeId = val.gameId || "";
+            document.getElementById('gameId').value = activeId;
+            document.getElementById('autoToggle').checked = val.autoMode || false;
+            if(activeId) fetchTimeline();
+        });
+
+        async function manualSync() {
+            activeId = document.getElementById('gameId').value;
+            if(activeId.length < 4) return alert("Bitte gültige ID eingeben.");
+            document.getElementById('loadBtn').disabled = true;
+            document.getElementById('loadBtn').innerText = "...";
+            await db.ref('auto_settings/gameId').set(activeId);
+            await fetchTimeline();
+            document.getElementById('loadBtn').disabled = false;
+            document.getElementById('loadBtn').innerText = "Laden";
+        }
+
         async function fetchTimeline() {
             if(!activeId) return;
             try {
                 const url = `https://corsproxy.io/?https://saisonmanager.de/api/v2/games/${activeId}.json`;
-                const response = await fetch(url); const data = await response.json();
-                playersDB = data.players; const events = data.events;
-                renderTimeline(events);
-                if(document.getElementById('autoToggle').checked) { if(events.length > lastEventCount && lastEventCount !== 0) { triggerOverlay(events[events.length - 1]); } }
-                lastEventCount = events.length;
-                document.getElementById('status-dot').className = "dot online"; document.getElementById('sync-status').innerText = "Live: " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            } catch (e) { document.getElementById('status-dot').className = "dot"; document.getElementById('sync-status').innerText = "Sync Fehler"; }
+                const response = await fetch(url);
+                const data = await response.json();
+                playersDB = data.players;
+                renderTimeline(data.events);
+                if(document.getElementById('autoToggle').checked) {
+                    if(data.events.length > lastEventCount && lastEventCount !== 0) {
+                        triggerOverlay(data.events[data.events.length - 1]);
+                    }
+                }
+                lastEventCount = data.events.length;
+                document.getElementById('status-dot').className = "dot online";
+                document.getElementById('sync-status').innerText = "Live: " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            } catch (e) {
+                document.getElementById('status-dot').className = "dot";
+                document.getElementById('sync-status').innerText = "Sync Fehler";
+            }
         }
+
         function renderTimeline(events) {
-            const container = document.getElementById('timeline'); container.innerHTML = ""; let lastPeriod = 0;
+            const container = document.getElementById('timeline');
+            container.innerHTML = "";
+            let lastPeriod = 0;
             const reversedEvents = [...events].reverse();
+
             reversedEvents.forEach(ev => {
                 if (ev.event_type !== 'goal' && ev.event_type !== 'penalty') return;
-                const teamPlayers = playersDB[ev.event_team]; let pName = "Unbekannt", detail = "";
+                const teamPlayers = playersDB[ev.event_team];
+                let pName = "Unbekannt", detail = "";
                 const pObj = teamPlayers.find(p => p.trikot_number == ev.number);
                 if(pObj) pName = `${pObj.player_firstname} ${pObj.player_name}`;
+
                 if(ev.event_type === 'goal') {
-                    if(ev.assist) { const aObj = teamPlayers.find(p => p.trikot_number == ev.assist); if(aObj) detail = `Assist: ${aObj.player_name}`; } else { detail = "Einzelleistung"; }
-                } else { detail = ""; } // Strafen-Details komplett entfernt
-                if(ev.period !== lastPeriod) { const h = document.createElement('div'); h.className = 'period-label'; h.innerText = ev.period + ". Periode"; container.appendChild(h); }
-                const card = document.createElement('div'); card.className = `event-card ${ev.event_type}`;
-                card.innerHTML = `<div class="ev-time">${ev.time}</div><div class="ev-body"><span class="ev-player">${pName}</span><span class="ev-detail">${detail}</span></div><div class="ev-icon">🚀</div>`;
-                card.onclick = () => { const triggerData = { type: ev.event_type, time: ev.time, player: pName, detail: detail }; db.ref('triggered_event').set({ data: triggerData, timestamp: Date.now() }); };
-                container.appendChild(card); lastPeriod = ev.period;
+                    if(ev.assist) {
+                        const aObj = teamPlayers.find(p => p.trikot_number == ev.assist);
+                        if(aObj) detail = `Assist: ${aObj.player_name}`;
+                    } else { detail = "Einzelleistung"; }
+                } else {
+                    // KORREKTUR: Dauer sicher auslesen
+                    detail = (ev.duration ? ev.duration + " Min" : "Zeitstrafe");
+                }
+
+                if(ev.period !== lastPeriod) {
+                    const h = document.createElement('div'); h.className = 'period-label'; h.innerText = ev.period + ". Periode"; container.appendChild(h);
+                }
+
+                const card = document.createElement('div');
+                card.className = `event-card ${ev.event_type}`;
+                card.innerHTML = `<div class="ev-time">${ev.time}</div><div class="ev-body"><span class="ev-player">${pName}</span><span class="ev-detail">${detail}</span></div><div style="opacity:0.2">🚀</div>`;
+                card.onclick = () => {
+                    const triggerData = { type: ev.event_type, time: ev.time, player: pName, detail: detail };
+                    db.ref('triggered_event').set({ data: triggerData, timestamp: Date.now() });
+                };
+                container.appendChild(card);
+                lastPeriod = ev.period;
             });
         }
-        function triggerOverlay(ev) { /* Logik für Auto-Mode analog zu oben */ }
+
         setInterval(fetchTimeline, 10000); 
     </script>
 </body>
