@@ -2,236 +2,62 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regie-Zentrale | Floorball Auto-Sync</title>
+    <title>Auto-Regie Director</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #0c0c0d; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: #16161a; padding: 20px; border-radius: 12px; border: 1px solid #2d2d33; width: 100%; max-width: 500px; margin-bottom: 20px; }
+        h2 { font-size: 12px; text-transform: uppercase; color: #ff0000; letter-spacing: 2px; margin-bottom: 15px; }
         
-        :root {
-            --bg-color: #0c0c0d;
-            --card-bg: #16161a;
-            --border-color: #2d2d33;
-            --primary-red: #ff0000;
-            --text-main: #ffffff;
-            --text-dim: #88888e;
-        }
-
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-color); 
-            color: var(--text-main); 
-            margin: 0; 
-            padding: 0; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-
-        /* Navigation / Header */
-        .top-nav {
-            width: 100%;
-            background: rgba(22, 22, 26, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-color);
-            padding: 15px 0;
-            display: flex;
-            justify-content: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            width: 90%;
-            max-width: 600px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .back-link {
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-
-        .back-link:hover { color: var(--primary-red); }
-
-        /* Setup Card */
-        .main-container {
-            width: 90%;
-            max-width: 550px;
-            margin-top: 30px;
-        }
-
-        .control-panel {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 25px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-        }
-
-        h1 {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--primary-red);
-            margin: 0 0 20px 0;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        input {
-            flex: 1;
-            background: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 14px;
-            color: white;
-            font-size: 16px;
-            outline: none;
-            transition: 0.3s;
-        }
-
-        input:focus { border-color: var(--primary-red); }
-
-        button#loadBtn {
-            background: var(--primary-red);
-            border: none;
-            color: white;
-            border-radius: 10px;
-            padding: 0 20px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: 0.2s;
-            text-transform: uppercase;
-        }
-
-        button#loadBtn:disabled { background: #333; color: #666; }
-
-        /* Status & Toggle Area */
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0,0,0,0.3);
-            padding: 12px 18px;
-            border-radius: 12px;
-            font-size: 13px;
-        }
-
-        .status-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text-dim); }
-        .dot { width: 8px; height: 8px; background: #444; border-radius: 50%; }
-        .dot.online { background: #00ff00; box-shadow: 0 0 10px #00ff00; animation: pulse 2s infinite; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        /* Switch Style */
-        .switch-box { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--primary-red); }
-        input:checked + .slider:before { transform: translateX(18px); }
-
-        /* Timeline Section */
-        .timeline { margin-top: 40px; margin-bottom: 50px; }
-        .period-label {
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--text-dim);
-            margin: 25px 0 15px 0;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .period-label::after { content: ''; flex: 1; height: 1px; background: var(--border-color); }
-
-        .event-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .event-card:hover { transform: translateX(5px); border-color: var(--primary-red); background: #1c1c22; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input[type="text"], input[type="number"] { flex: 1; background: #000; border: 1px solid #333; padding: 12px; color: white; border-radius: 8px; }
         
-        .event-card::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: #444;
+        /* Color Picker Styles */
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .color-item { display: flex; flex-direction: column; gap: 5px; }
+        input[type="color"] { width: 100%; height: 40px; border: none; background: none; cursor: pointer; }
+
+        .event-btn { 
+            background: #1c1c22; border: 1px solid #333; padding: 15px; border-radius: 10px; 
+            margin-bottom: 10px; display: flex; align-items: center; cursor: pointer; transition: 0.2s;
+            border-left: 5px solid #444; width: 100%; text-align: left; color: white;
         }
-        .event-card.goal::before { background: var(--primary-red); }
-        .event-card.penalty::before { background: #fff; }
-
-        .ev-time { font-size: 18px; font-weight: 900; width: 45px; color: var(--primary-red); }
-        .penalty .ev-time { color: white; }
-        
-        .ev-body { flex: 1; margin-left: 15px; }
-        .ev-player { display: block; font-weight: 700; text-transform: uppercase; font-size: 15px; margin-bottom: 2px; }
-        .ev-detail { font-size: 12px; color: var(--text-dim); font-style: italic; }
-        
-        .ev-icon { font-size: 18px; opacity: 0.2; transition: 0.3s; }
-        .event-card:hover .ev-icon { opacity: 1; transform: scale(1.2); }
-
+        .event-btn:hover { border-color: #ff0000; transform: translateX(5px); }
+        .event-btn.goal { border-left-color: #ff0000; }
+        .event-btn.penalty { border-left-color: #fff; }
+        .ev-time { font-weight: 900; color: #ff0000; width: 40px; }
+        .ev-info { flex: 1; margin-left: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="top-nav">
-        <div class="header-content">
-            <span style="font-weight: 900; letter-spacing: 1px;">DIRECTOR <span style="color:var(--primary-red)">PRO</span></span>
-            <a href="admin.html" class="back-link">← ZURÜCK</a>
+    <div class="card">
+        <h2>Design & Farben</h2>
+        <div class="color-grid">
+            <div class="color-item">
+                <label style="font-size: 10px;">Hauptfarbe (z.B. Team Rot)</label>
+                <input type="color" id="colorPrimary" value="#ff0000" onchange="saveColors()">
+            </div>
+            <div class="color-item">
+                <label style="font-size: 10px;">Akzentfarbe (Schrift links)</label>
+                <input type="color" id="colorAccent" value="#ffffff" onchange="saveColors()">
+            </div>
         </div>
     </div>
 
-    <div class="main-container">
-        <div class="control-panel">
-            <h1>Saisonmanager Auto-Regie</h1>
-            
-            <div class="input-group">
-                <input type="text" id="gameId" placeholder="Spiel-ID (z.B. 43426)">
-                <button id="loadBtn" onclick="manualSync()">Laden</button>
-            </div>
-
-            <div class="status-row">
-                <div class="status-indicator">
-                    <div id="status-dot" class="dot"></div>
-                    <span id="sync-status">Bereit</span>
-                </div>
-                
-                <label class="switch-box">
-                    <span style="font-weight:700; font-size:11px; text-transform:uppercase; color:var(--text-dim)">Auto-Mode</span>
-                    <div class="switch">
-                        <input type="checkbox" id="autoToggle">
-                        <span class="slider"></span>
-                    </div>
-                </label>
-            </div>
+    <div class="card">
+        <h2>Spiel-Verbindung</h2>
+        <div class="input-group">
+            <input type="number" id="gameId" placeholder="Spiel-ID (z.B. 43426)">
+            <button onclick="loadGame()" style="background:#ff0000; border:none; color:white; padding:0 20px; border-radius:8px; font-weight:bold; cursor:pointer;">Laden</button>
         </div>
-
-        <div id="timeline" class="timeline"></div>
     </div>
+
+    <div id="timeline" style="width: 100%; max-width: 540px;"></div>
 
     <script>
-        // FIREBASE KONFIGURATION (Bleibt gleich)
         const firebaseConfig = {
             apiKey: "AIzaSyCfChQFOjIgBIcXPd57MTalvRrHFXr4UzM",
             authDomain: "obs-overlay-2950c.firebaseapp.com",
@@ -244,112 +70,61 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let activeId = "";
-        let playersDB = null;
-        let lastEventCount = 0;
-
-        // Firebase Listeners
-        db.ref('auto_settings').on('value', snap => {
-            const val = snap.val() || {};
-            activeId = val.gameId || "";
-            document.getElementById('gameId').value = activeId;
-            document.getElementById('autoToggle').checked = val.autoMode || false;
-            if(activeId) fetchTimeline();
+        // Sync Colors from DB
+        db.ref('auto_settings/colors').on('value', snap => {
+            const c = snap.val();
+            if(c) {
+                document.getElementById('colorPrimary').value = c.primary;
+                document.getElementById('colorAccent').value = c.accent;
+            }
         });
 
-        async function manualSync() {
-            activeId = document.getElementById('gameId').value;
-            if(activeId.length < 4) return alert("Bitte gültige ID eingeben.");
-            document.getElementById('loadBtn').disabled = true;
-            document.getElementById('loadBtn').innerText = "...";
-            await db.ref('auto_settings/gameId').set(activeId);
-            await fetchTimeline();
-            document.getElementById('loadBtn').disabled = false;
-            document.getElementById('loadBtn').innerText = "Laden";
-        }
-
-        async function fetchTimeline() {
-            if(!activeId) return;
-            try {
-                const url = `https://corsproxy.io/?https://saisonmanager.de/api/v2/games/${activeId}.json`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                playersDB = data.players;
-                const events = data.events;
-
-                renderTimeline(events);
-                
-                // Automatik Check
-                if(document.getElementById('autoToggle').checked) {
-                    if(events.length > lastEventCount && lastEventCount !== 0) {
-                        // Triggert das Overlay für das neueste Event
-                        triggerOverlay(events[events.length - 1]);
-                    }
-                }
-                lastEventCount = events.length;
-
-                document.getElementById('status-dot').className = "dot online";
-                document.getElementById('sync-status').innerText = "Live: " + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            } catch (e) {
-                document.getElementById('status-dot').className = "dot";
-                document.getElementById('sync-status').innerText = "Sync Fehler";
-            }
-        }
-
-        function renderTimeline(events) {
-            const container = document.getElementById('timeline');
-            container.innerHTML = "";
-            let lastPeriod = 0;
-
-            const reversedEvents = [...events].reverse();
-
-            reversedEvents.forEach(ev => {
-                if (ev.event_type !== 'goal' && ev.event_type !== 'penalty') return;
-
-                const teamPlayers = playersDB[ev.event_team];
-                let pName = "Unbekannt", detail = "";
-
-                const pObj = teamPlayers.find(p => p.trikot_number == ev.number);
-                if(pObj) pName = `${pObj.player_firstname} ${pObj.player_name}`;
-
-                if(ev.event_type === 'goal') {
-                    if(ev.assist) {
-                        const aObj = teamPlayers.find(p => p.trikot_number == ev.assist);
-                        if(aObj) detail = `Assist: ${aObj.player_name}`;
-                    } else { detail = "Einzelleistung"; }
-                } else {
-                    detail = `${ev.penalty_type_string} (${ev.duration} Min)`;
-                }
-
-                if(ev.period !== lastPeriod) {
-                    const h = document.createElement('div');
-                    h.className = 'period-label';
-                    h.innerText = ev.period + ". Periode";
-                    container.appendChild(h);
-                }
-
-                const card = document.createElement('div');
-                card.className = `event-card ${ev.event_type}`;
-                card.innerHTML = `
-                    <div class="ev-time">${ev.time}</div>
-                    <div class="ev-body">
-                        <span class="ev-player">${pName}</span>
-                        <span class="ev-detail">${detail}</span>
-                    </div>
-                    <div class="ev-icon">🚀</div>
-                `;
-                
-                card.onclick = () => {
-                    const triggerData = { type: ev.event_type, time: ev.time, player: pName, detail: detail };
-                    db.ref('triggered_event').set({ data: triggerData, timestamp: Date.now() });
-                };
-                
-                container.appendChild(card);
+        function saveColors() {
+            db.ref('auto_settings/colors').set({
+                primary: document.getElementById('colorPrimary').value,
+                accent: document.getElementById('colorAccent').value
             });
         }
 
-        setInterval(fetchTimeline, 10000); 
+        async function loadGame() {
+            const id = document.getElementById('gameId').value;
+            const url = `https://corsproxy.io/?https://saisonmanager.de/api/v2/games/${id}.json`;
+            const res = await fetch(url);
+            const data = await res.json();
+            render(data);
+        }
+
+        function render(data) {
+            const container = document.getElementById('timeline');
+            container.innerHTML = "";
+            const players = data.players;
+            const events = [...data.events.reverse()];
+            
+            events.forEach(ev => {
+                if(ev.event_type !== 'goal' && ev.event_type !== 'penalty') return;
+                const isG = ev.event_type === 'goal';
+                const teamP = players[ev.event_team];
+                const p = teamP.find(x => x.trikot_number == ev.number);
+                const name = p ? p.player_firstname + " " + p.player_name : "Unbekannt";
+                
+                const btn = document.createElement('button');
+                btn.className = `event-btn ${ev.event_type}`;
+                btn.innerHTML = `<span class="ev-time">${ev.time}</span><div class="ev-info"><b>${name}</b><br><small>${isG ? 'Tor' : ev.penalty_type_string}</small></div>`;
+                
+                btn.onclick = () => {
+                    db.ref('triggered_event').set({
+                        timestamp: Date.now(),
+                        data: {
+                            type: ev.event_type,
+                            player: name,
+                            time: ev.time + "'",
+                            detail: isG ? (ev.assist ? "Assist: " + ev.assist : "Einzelleistung") : ev.penalty_type_string
+                        }
+                    });
+                };
+                container.appendChild(btn);
+            });
+        }
     </script>
 </body>
 </html>
