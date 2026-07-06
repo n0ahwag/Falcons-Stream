@@ -2,55 +2,55 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Regie | Floorball Dual-Color</title>
+    <title>Auto-Sync Regie Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         body { font-family: 'Inter', sans-serif; background: #0c0c0d; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: #16161a; padding: 20px; border-radius: 12px; border: 1px solid #2d2d33; width: 100%; max-width: 500px; margin-bottom: 20px; }
+        .card { background: #16161a; padding: 20px; border-radius: 12px; border: 1px solid #333; width: 100%; max-width: 550px; margin-bottom: 20px; }
+        .team-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .team-card { background: #222; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid #444; }
+        .team-card b { display: block; font-size: 14px; margin-bottom: 10px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         
-        .team-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .team-col { background: #1c1c22; padding: 15px; border-radius: 10px; border: 1px solid #333; }
-        .team-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 10px; display: block; }
+        button { padding: 10px; border-radius: 6px; border: none; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 11px; }
+        .btn-lineup { width: 100%; background: #444; color: white; margin-bottom: 5px; }
+        .btn-lineup:hover { background: #ff0000; }
         
-        input[type="color"] { width: 100%; height: 35px; border: none; background: none; cursor: pointer; margin-bottom: 5px; }
-        input[type="number"] { width: 100%; padding: 10px; background: #000; border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box; }
-
-        .event-btn { 
-            background: #1c1c22; border: 1px solid #333; padding: 12px; border-radius: 8px; 
-            margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; width: 100%; color: white;
-            transition: transform 0.1s;
-        }
-        .event-btn:hover { border-color: #ff0000; }
-        .ev-time { font-weight: 900; color: #ff0000; width: 35px; font-size: 14px; }
-        .ev-info { flex: 1; text-align: left; margin-left: 10px; }
-        .badge { font-size: 9px; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; font-weight: 900; }
+        input[type="color"] { width: 100%; height: 30px; border: none; background: none; cursor: pointer; }
+        input[type="number"] { width: 100%; padding: 12px; background: #000; border: 1px solid #444; color: white; border-radius: 8px; margin-bottom: 10px; }
+        #status { font-size: 11px; color: #666; text-align: center; }
+        
+        .timeline-item { background: #1a1a1f; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; align-items: center; border-left: 5px solid #444; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2 style="font-size: 14px; margin-top: 0; color: #ff0000;">TEAM FARBEN KONFIGURIEREN</h2>
-        <div class="team-settings">
-            <div class="team-col">
-                <span class="team-title" id="hTitle">Heimteam</span>
-                <input type="color" id="colorH_main" value="#ff0000">
-                <input type="color" id="colorH_acc" value="#ffffff">
-            </div>
-            <div class="team-col">
-                <span class="team-title" id="gTitle">Gastteam</span>
-                <input type="color" id="colorG_main" value="#0055ff">
-                <input type="color" id="colorG_acc" value="#ffffff">
-            </div>
+        <div style="display:flex; gap:10px;">
+            <input type="number" id="gameId" placeholder="Spiel-ID (z.B. 43426)">
+            <button onclick="loadGame()" style="background:#ff0000; color:white; padding:0 20px;">Laden</button>
         </div>
-        <div style="display: flex; gap: 10px;">
-            <input type="number" id="gameId" placeholder="Spiel-ID">
-            <button onclick="loadGame()" style="background: #ff0000; border: none; color: white; padding: 0 20px; border-radius: 5px; font-weight: bold; cursor: pointer;">LADEN</button>
-        </div>
+        <div id="status">Bereit.</div>
     </div>
 
-    <div id="timeline" style="width: 100%; max-width: 500px;"></div>
+    <div class="card" id="lineup-controls" style="display:none;">
+        <div class="team-row">
+            <div class="team-card">
+                <b id="hName">Heim</b>
+                <input type="color" id="colorH" value="#ff0000">
+                <button class="btn-lineup" onclick="showLineup('home')">Starting 6 zeigen</button>
+            </div>
+            <div class="team-card">
+                <b id="gName">Gast</b>
+                <input type="color" id="colorG" value="#0055ff">
+                <button class="btn-lineup" onclick="showLineup('guest')">Starting 6 zeigen</button>
+            </div>
+        </div>
+        <button onclick="hideLineup()" style="width:100%; background:#000; color:#555; border:1px solid #333;">Aufstellung ausblenden</button>
+    </div>
+
+    <div id="timeline" style="width:100%; max-width:550px;"></div>
 
     <script>
         const firebaseConfig = {
@@ -65,62 +65,65 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let homeId = "", guestId = "";
+        let apiData = null;
+        let scoreStr = "0:0";
+
+        db.ref('scoreboard_active').on('value', s => {
+            const d = s.val() || {scoreA:0, scoreB:0};
+            scoreStr = `${d.scoreA}:${d.scoreB}`;
+        });
 
         async function loadGame() {
             const id = document.getElementById('gameId').value;
             const url = `https://corsproxy.io/?https://saisonmanager.de/api/v2/games/${id}.json`;
             const res = await fetch(url);
-            const data = await res.json();
+            apiData = await res.json();
             
-            homeId = data.game.home_team.id;
-            guestId = data.game.guest_team.id;
-            document.getElementById('hTitle').innerText = data.game.home_team.name;
-            document.getElementById('gTitle').innerText = data.game.guest_team.name;
-            
-            render(data);
+            document.getElementById('hName').innerText = apiData.game.home_team.name;
+            document.getElementById('gName').innerText = apiData.game.guest_team.name;
+            document.getElementById('lineup-controls').style.display = "block";
+            document.getElementById('status').innerText = "Spiel geladen!";
+            renderTimeline();
         }
 
-        function render(data) {
+        function showLineup(side) {
+            const team = side === 'home' ? apiData.game.home_team : apiData.game.guest_team;
+            const color = document.getElementById(side === 'home' ? 'colorH' : 'colorG').value;
+            
+            // Suche die "Starting Six" (Spieler mit is_starting: true)
+            const allPlayers = apiData.players[team.id];
+            const starting = allPlayers.filter(p => p.is_starting).sort((a,b) => a.role_id - b.role_id);
+            
+            const playersFormatted = starting.map(p => ({
+                nr: p.trikot_number,
+                name: p.player_firstname + " " + p.player_name
+            }));
+
+            db.ref('auto_lineup_trigger').set({
+                visible: true,
+                teamName: team.name,
+                color: color,
+                score: scoreStr,
+                players: playersFormatted,
+                timestamp: Date.now()
+            });
+        }
+
+        function hideLineup() { db.ref('auto_lineup_trigger/visible').set(false); }
+
+        function renderTimeline() {
             const container = document.getElementById('timeline');
             container.innerHTML = "";
-            const players = data.players;
-            const events = [...data.events].reverse();
-            
+            const events = [...apiData.events].reverse();
             events.forEach(ev => {
                 if(ev.event_type !== 'goal' && ev.event_type !== 'penalty') return;
-                const isG = ev.event_type === 'goal';
-                const teamP = players[ev.event_team];
-                const p = teamP.find(x => x.trikot_number == ev.number);
-                const name = p ? p.player_firstname + " " + p.player_name : "Unbekannt";
-                
-                const btn = document.createElement('button');
-                btn.className = `event-btn`;
-                btn.innerHTML = `
-                    <span class="ev-time">${ev.time}</span>
-                    <div class="ev-info">
-                        <b>${name}</b><br>
-                        <span class="badge" style="background:${isG?'#ff0000':'#fff'}; color:${isG?'#fff':'#000'}">${isG?'Tor':ev.penalty_type_string}</span>
-                    </div>`;
-                
-                btn.onclick = () => {
-                    // Farben basierend auf event_team wählen
-                    const isHome = ev.event_team == homeId;
-                    const colorMain = isHome ? document.getElementById('colorH_main').value : document.getElementById('colorG_main').value;
-                    const colorAcc = isHome ? document.getElementById('colorH_acc').value : document.getElementById('colorG_acc').value;
-
-                    db.ref('triggered_event').set({
-                        timestamp: Date.now(),
-                        data: {
-                            type: ev.event_type,
-                            player: name,
-                            time: ev.time + "'",
-                            detail: isG ? (ev.assist ? "Assist: " + ev.assist : "Einzelleistung") : ev.penalty_type_string
-                        },
-                        colors: { main: colorMain, accent: colorAcc }
-                    });
+                const div = document.createElement('div');
+                div.className = "timeline-item";
+                div.innerHTML = `<b>${ev.time}'</b> - ${ev.event_type.toUpperCase()}`;
+                div.onclick = () => {
+                    // Hier Trigger für Goal-Overlay einfügen (wie bisher)
                 };
-                container.appendChild(btn);
+                container.appendChild(div);
             });
         }
     </script>
